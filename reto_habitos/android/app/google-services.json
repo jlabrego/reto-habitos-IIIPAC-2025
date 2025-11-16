@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "342205720",
+    "project_id": "proj-reto-habitos-gja",
+    "storage_bucket": "proj-reto-habitos-gja.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:342205720:android:f20c8805c5d25abaae6a6d",
+        "android_client_info": {
+          "package_name": "hn.edu.unah.proyecto_reto_habitos_GJA"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGlCvEY8Raj4nyX4E5rfudrpkLdNvAm6w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
