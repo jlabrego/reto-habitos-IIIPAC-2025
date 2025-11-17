@@ -99,7 +99,7 @@ class HabitListScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 15),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
-        side: BorderSide(color: habit.color.withOpacity(0.5), width: 1.5),
+        side: BorderSide(/*color: habit.color.withOpacity(0.5),*/ width: 1.5),
       ),
       elevation: 5,
       child: InkWell(
@@ -124,14 +124,16 @@ class HabitListScreen extends StatelessWidget {
                 width: 45,
                 height: 45,
                 decoration: BoxDecoration(
-                  color: habit.color.withOpacity(0.8),
+                  //color: habit.color.withOpacity(0.8),
                   borderRadius: BorderRadius.circular(10),
                 ),
+                /*
                 child: Icon(
                   _getIconForCategory(habit.category), // Icono basado en la categoría
                   color: Colors.white,
                   size: 28,
                 ),
+                */
               ),
               const SizedBox(width: 15),
               // Detalles del Hábito
@@ -146,7 +148,9 @@ class HabitListScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Meta diaria: ${habit.suggestedDurationMinutes} min | ${habit.category}',
+
+                      //'Meta diaria: ${habit.duration} min | ${habit.category}',
+                      'Meta diaria: ${habit.duration} min ',
                       style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                     ),
                     const SizedBox(height: 8),
@@ -169,7 +173,7 @@ class HabitListScreen extends StatelessWidget {
                             LinearProgressIndicator(
                               value: progress,
                               backgroundColor: Colors.grey.shade200,
-                              valueColor: AlwaysStoppedAnimation<Color>(habit.color),
+                              //valueColor: AlwaysStoppedAnimation<Color>(habit.color),
                               minHeight: 8,
                               borderRadius: BorderRadius.circular(4),
                             ),
@@ -194,6 +198,7 @@ class HabitListScreen extends StatelessWidget {
   }
 
   // Función simple para obtener iconos basados en la categoría
+  
   IconData _getIconForCategory(String category) {
     switch (category.toLowerCase()) {
       case 'salud':

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:go_router/go_router.dart';
+import 'package:reto_habitos/src/models/habit.dart';
 // Asume que tienes este archivo para la configuración de Firebase
 import 'firebase_options.dart'; 
 
@@ -14,7 +15,9 @@ import 'src/providers/habit_service.dart';
 // --- Singleton de Servicio (Disponible Globalmente en Rutas) ---
 // NOTA: Usamos una variable global para el servicio, ya que GoRouter no usa Provider 
 // por defecto en la configuración de sus builders.
-final HabitService habitService = FirestoreHabitService(); 
+
+//final HabitService habitService = FirestoreHabitService(); 
+final HabitService habitService = HabitService(); 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +34,7 @@ void main() async {
 // --- Configuración de Rutas con GoRouter ---
 final _router = GoRouter(
   initialLocation: '/habits',
-  routes: [
+  routes: [ 
     // 1. Ruta Principal: Lista de Hábitos
     GoRoute(
       path: '/habits',
@@ -69,9 +72,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/add-habit',
       name: 'add-habit',
-      builder: (context, state) => const Scaffold(
-        appBar: AppBar(title: Text('Nuevo Hábito')),
-        body: Center(child: Text('Aquí va HabitFormScreen')),
+      //builder: (context, state) => const Scaffold(
+      builder: (context, state) => Scaffold(
+        appBar: AppBar(title: const Text('Nuevo Hábito')),
+        body: const Center(child: Text('Aquí va HabitFormScreen')),
       ),
     ),
   ],

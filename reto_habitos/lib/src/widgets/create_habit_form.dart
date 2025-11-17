@@ -66,10 +66,13 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
     final habit = Habit(
       id: id,
       name: _name,
-      category: _category,
-      suggestedDurationMinutes: _duration,
-      startDate: DateTime.now(),
-      color: _selectedColor,
+      //category: _category,
+      duration: _duration,
+      createdAt: DateTime.now(), 
+      description: 'Prueba', 
+      streak: 0, 
+      daysCompleted: 0,
+      //color: _selectedColor,
     );
 
     try {

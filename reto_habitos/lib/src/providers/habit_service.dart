@@ -49,7 +49,7 @@ return habitsRef
   /// Obtiene el progreso del día actual como stream
   Stream<DayProgress?> getTodayProgressStream(Habit habit) {
  final today = DateTime.now();
- final daysSinceStart = today.difference(habit.startDate).inDays + 1;
+ final daysSinceStart = today.difference(habit.createdAt).inDays + 1;
  final todayId = 'day-$daysSinceStart';
 
 return habitsRef
@@ -77,6 +77,7 @@ return habitsRef
         .collection('progress')
         .snapshots()
         .map((snapshot) => snapshot.docs
+
             .map((doc) => DayProgress.fromDoc(doc.id, doc.data()!))
             .toList());
   }

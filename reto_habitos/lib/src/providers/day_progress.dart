@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:reto_habitos/src/models/habit.dart';
+//import 'package:reto_habitos/src/models/habit.dart';
+
 class DayProgress {
   final String id;              // Ej: "day-1", "day-2"
   final DateTime date;          // Fecha del día
