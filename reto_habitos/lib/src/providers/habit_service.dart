@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/habit.dart';
+import '../providers/day_progress.dart';
 
 class HabitService {
   final CollectionReference habitsRef =
@@ -19,6 +20,15 @@ class HabitService {
     });
   }
 
+Stream<int> getCompletedDaysCountStream(String habitId) {
+return habitsRef
+.doc(habitId)
+ .collection('progress')
+// Filtra solo los documentos donde 'isCompleted' sea true
+ .where('isCompleted', isEqualTo: true)
+ .snapshots()
+.map((snapshot) => snapshot.docs.length); // Devuelve el conteo de documentos
+}
   /// Obtiene un hábito por ID
   Future<Habit?> getHabitById(String id) async {
     final doc = await habitsRef.doc(id).get();
@@ -34,5 +44,40 @@ class HabitService {
   /// Elimina un hábito
   Future<void> deleteHabit(String id) async {
     await habitsRef.doc(id).delete();
+  }
+
+  /// Obtiene el progreso del día actual como stream
+  Stream<DayProgress?> getTodayProgressStream(Habit habit) {
+ final today = DateTime.now();
+ final daysSinceStart = today.difference(habit.startDate).inDays + 1;
+ final todayId = 'day-$daysSinceStart';
+
+return habitsRef
+ .doc(habit.id)
+.collection('progress')
+ .doc(todayId)
+ .snapshots()
+  .map((doc) =>
+ doc.exists ? DayProgress.fromDoc(doc.id, doc.data()!) : null);
+}
+
+  /// Guarda el progreso de un día
+  Future<void> saveDayProgress(String habitId, DayProgress progress) async {
+    await habitsRef
+        .doc(habitId)
+        .collection('progress')
+        .doc(progress.id)
+        .set(progress.toMap());
+  }
+
+  /// Devuelve stream de todo el progreso del hábito (para la cuadrícula de 30 días)
+  Stream<List<DayProgress>> getProgressStream(Habit habit) {
+    return habitsRef
+        .doc(habit.id)
+        .collection('progress')
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => DayProgress.fromDoc(doc.id, doc.data()!))
+            .toList());
   }
 }
