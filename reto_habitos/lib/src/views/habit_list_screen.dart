@@ -1,10 +1,9 @@
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Necesario para Firestore o mock
-import '../models/habit.dart'; // Importa los modelos definidos previamente
-import '../providers/habit_service.dart'; // Importa el servicio de datos
-import 'habit_detail_screen.dart'; // Importa la pantalla de detalle
+// File: screens/habit_list_screen.dart
 
-// --- INICIO DEL CÓDIGO ---
+import 'package:flutter/material.dart';
+import 'package:reto_habitos/src/models/habit.dart'; // Importa los modelos definidos previamente
+import 'package:reto_habitos/src/providers/habit_service.dart'; // Importa el servicio de datos
+import 'habit_detail_screen.dart'; 
 
 /// Pantalla principal que muestra el listado de hábitos del usuario.
 class HabitListScreen extends StatelessWidget {
@@ -94,14 +93,8 @@ class HabitListScreen extends StatelessWidget {
 
   // Widget auxiliar para mostrar la tarjeta de cada hábito
   Widget _buildHabitCard(BuildContext context, Habit habit) {
-    // Calculamos el progreso (para un indicador simple)
-    // Para simplificar, asumiremos que se completan 10 días de 30 para el ejemplo
-    // En una aplicación real, esto requeriría una consulta adicional de Firestore.
-    const mockCompletedDays = 10;
-    const totalDays = 30;
-    final progress = mockCompletedDays / totalDays;
-    final remainingDays = totalDays - mockCompletedDays;
-
+    // Aquí usamos el StreamBuilder para obtener el progreso real
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 15),
       shape: RoundedRectangleBorder(
@@ -157,18 +150,37 @@ class HabitListScreen extends StatelessWidget {
                       style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                     ),
                     const SizedBox(height: 8),
-                    // Barra de Progreso
-                    LinearProgressIndicator(
-                      value: progress,
-                      backgroundColor: Colors.grey.shade200,
-                      valueColor: AlwaysStoppedAnimation<Color>(habit.color),
-                      minHeight: 8,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      '$remainingDays días restantes',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+
+                    // **STREAMBUILDER INTEGRADO PARA EL PROGRESO REAL**
+                    StreamBuilder<int>(
+                      stream: habitService.getCompletedDaysCountStream(habit.id),
+                      builder: (context, snapshot) {
+                        // Si hay error, o está cargando, asumimos 0 días completados
+                        final completedDays = snapshot.data ?? 0; 
+                        const totalDays = 30;
+                        
+                        final progress = completedDays / totalDays;
+                        final remainingDays = totalDays - completedDays;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Barra de Progreso
+                            LinearProgressIndicator(
+                              value: progress,
+                              backgroundColor: Colors.grey.shade200,
+                              valueColor: AlwaysStoppedAnimation<Color>(habit.color),
+                              minHeight: 8,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              '$remainingDays días restantes (${completedDays} completados)',
+                              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),
