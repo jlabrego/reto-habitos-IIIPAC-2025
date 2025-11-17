@@ -68,6 +68,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
       name: _name,
       category: _category,
       suggestedDurationMinutes: _duration,
+      startDate: DateTime.now(),
       color: _selectedColor,
     );
 
