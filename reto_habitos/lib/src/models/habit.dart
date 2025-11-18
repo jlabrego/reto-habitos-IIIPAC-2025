@@ -20,7 +20,7 @@ class Habit {
     required this.createdAt
   });
 
-  Map<String, dynamic> toMap() => {
+  Map<String, dynamic> tojson() => {
         'id': id,
         'name': name,
         'description': description,
@@ -31,16 +31,16 @@ class Habit {
         
       };
 
-  factory Habit.fromMap(Map<String, dynamic> map) {
+  factory Habit.fromJson(Map<String, dynamic> json) {
     return Habit(
 
-      id: map['id'],
-      name: map['name'],
-      description: map['description'],
-      duration: map['duration'],
-      daysCompleted: map['daysCompleted'],
-      streak: map['streak'],
-      createdAt: (map['createdAt'] as Timestamp).toDate(),
+      id: json['id'],
+      name: json['name'],
+      description: json['description'],
+      duration: json['duration'],
+      daysCompleted: json['daysCompleted'],
+      streak: json['streak'],
+      createdAt: (json['createdAt'] as Timestamp).toDate(),
  
     );
   }
