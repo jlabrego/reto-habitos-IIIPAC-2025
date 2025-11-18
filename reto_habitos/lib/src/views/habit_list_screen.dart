@@ -1,6 +1,7 @@
 // File: screens/habit_list_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:reto_habitos/src/models/habit.dart'; // Importa los modelos definidos previamente
 import 'package:reto_habitos/src/providers/habit_service.dart'; // Importa el servicio de datos
 import 'habit_detail_screen.dart'; 
@@ -56,6 +57,7 @@ class HabitListScreen extends StatelessWidget {
         onPressed: () {
           // TODO: Implementar navegación a HabitFormScreen
           _showMockAddHabit(context); 
+          //context.goNamed('add-habit');
         },
         backgroundColor: Colors.teal.shade400,
         foregroundColor: Colors.white,

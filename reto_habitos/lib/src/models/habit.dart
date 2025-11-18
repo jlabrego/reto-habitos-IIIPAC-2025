@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Habit {
   final String id;
   final String name;
-  final String description;
+  final String? description;
   final int duration;
   final int daysCompleted;
   final int streak;
@@ -13,7 +13,7 @@ class Habit {
   Habit({
     required this.id,
     required this.name,
-    required this.description,
+    this.description,
     required this.duration,
     required this.streak,
     required this.daysCompleted,
