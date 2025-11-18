@@ -1,9 +1,10 @@
 // main.dart
-
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reto_habitos/src/models/habit.dart';
+//import 'package:reto_habitos/src/widgets/admin_habit_pagePrueba.dart'; || Clase de prueba
+import 'package:reto_habitos/src/widgets/create_habit_form.dart';
 // Asume que tienes este archivo para la configuración de Firebase
 import 'firebase_options.dart'; 
 
@@ -72,12 +73,31 @@ final _router = GoRouter(
     GoRoute(
       path: '/add-habit',
       name: 'add-habit',
-      //builder: (context, state) => const Scaffold(
-      builder: (context, state) => Scaffold(
+      builder: (context, state) {
+        final habitService = HabitService();
+        return HabitFormScreen(habitService: habitService);
+      },
+/*
         appBar: AppBar(title: const Text('Nuevo Hábito')),
         body: const Center(child: Text('Aquí va HabitFormScreen')),
       ),
+*/
     ),
+
+/*
+Ruta de prueba de MODIFICACIÓN con archivo temporal
+    GoRoute(
+      path: '/edit-habit',
+      name: 'edit-habit',
+      builder: (context, state) {
+        print(state.pathParameters);
+        final habit = state.extra as Map<String, dynamic>;
+        return AdminHabitPage(habit: habit);
+      },
+
+    ),
+*/
+
   ],
 );
 
