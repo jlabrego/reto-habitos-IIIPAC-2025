@@ -57,7 +57,7 @@ class HabitListScreen extends StatelessWidget {
         onPressed: () {
           // TODO: Implementar navegación a HabitFormScreen
           _showMockAddHabit(context); 
-          //context.goNamed('add-habit');
+          context.goNamed('add-habit');
         },
         backgroundColor: Colors.teal.shade400,
         foregroundColor: Colors.white,
