@@ -1,235 +1,179 @@
-// File: screens/habit_list_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:reto_habitos/src/models/habit.dart'; // Importa los modelos definidos previamente
-import 'package:reto_habitos/src/providers/habit_service.dart'; // Importa el servicio de datos
-import 'habit_detail_screen.dart'; 
+import '../models/habit.dart';
+import '../providers/habit_service.dart';
+import '../widgets/global_progress_summary.dart';
 
-/// Pantalla principal que muestra el listado de hábitos del usuario.
 class HabitListScreen extends StatelessWidget {
   final HabitService habitService;
 
   const HabitListScreen({super.key, required this.habitService});
+
+  // 1. Método auxiliar para íconos
+  IconData _getIconForCategory(String description) {
+    switch (description.toLowerCase()) {
+    case 'salud': 
+      return Icons.fitness_center_rounded;
+    case 'estudio': 
+      return Icons.book_rounded;           
+    case 'productividad': 
+      return Icons.work_outline_rounded; 
+    case 'finanzas': 
+      return Icons.account_balance_wallet_rounded; 
+    default: 
+      return Icons.local_activity_rounded;
+    }
+  }
+
+
+  Widget _buildHabitCard(BuildContext context, Habit habit) {
+    
+    final String? hex = habit.colorHex;
+    const int defaultColorValue = 0xFF673AB7; 
+
+    int colorValue;
+    if (hex != null) {
+      if (hex.length == 6) {
+        colorValue = int.tryParse('FF$hex', radix: 16) ?? defaultColorValue;
+      } else if (hex.length >= 8) {
+        // AARRGGBB -> Usar tal cual
+        colorValue = int.tryParse(hex, radix: 16) ?? defaultColorValue;
+      } else {
+        colorValue = defaultColorValue;
+      }
+    } else {
+      colorValue = defaultColorValue;
+    }
+    
+    final Color habitColor = Color(colorValue);
+    
+
+    return StreamBuilder<int>(
+      stream: habitService.getCompletedDaysCountStream(habit.id), 
+      builder: (context, countSnapshot) {
+        final completedDays = countSnapshot.data ?? habit.daysCompleted; 
+        const totalDays = 30;
+        final progress = completedDays / totalDays;
+        final remainingDays = totalDays - completedDays;
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          elevation: 3,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: () {
+              // Navegación a la pantalla de detalle
+              context.pushNamed(
+                'habit-detail',
+                pathParameters: {'id': habit.id},
+                extra: habit,
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              child: Row(
+                children: [
+                  Container(
+                    width: 50, height: 50,
+                    decoration: BoxDecoration(
+                      color: habitColor.withOpacity(0.15), 
+                      borderRadius: BorderRadius.circular(12)),
+                    child: Icon(
+                      _getIconForCategory(habit.category), 
+                      color: habitColor, 
+                      size: 30
+                    ),
+                  ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(habit.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87)),
+                        const SizedBox(height: 3),
+                        Text('Meta diaria: ${habit.duration} min', style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+                        const SizedBox(height: 10),
+                        LinearProgressIndicator(
+                          value: progress,
+                          backgroundColor: Colors.grey.shade200,
+                          color: progress >= 1.0 ? Colors.green.shade400 : habitColor,
+                          minHeight: 6, borderRadius: BorderRadius.circular(3),
+                        ),
+                        const SizedBox(height: 5),
+                        Text('$remainingDays días restantes ($completedDays completados)', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, color: Colors.grey, size: 30),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+  Widget _buildBottomNavBar(BuildContext context) { /* ... */ return Container(height: 60); }
+  Widget _buildEmptyState(BuildContext context) { /* ... */ return const Center(child: Text('No hay retos activos.')); }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Tus Retos de 30 Días',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        backgroundColor: Colors.deepPurple,
-        elevation: 0,
+        title: const Text('Tus Retos de 30 Días', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+        backgroundColor: Colors.grey.shade50, elevation: 0, centerTitle: true,
       ),
       body: StreamBuilder<List<Habit>>(
-        // Escucha el stream de todos los hábitos
         stream: habitService.getHabitsStream(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-
-          if (snapshot.hasError) {
-            return Center(
-                child: Text('Error al cargar: ${snapshot.error}',
-                    textAlign: TextAlign.center));
-          }
-
           final habits = snapshot.data ?? [];
+          if (habits.isEmpty) return _buildEmptyState(context);
 
-          if (habits.isEmpty) {
-            return _buildEmptyState(context);
-          }
+          // Lógica de cálculo de progreso global
+          final int totalCompletedDays = habits.fold<int>(0, (sum, habit) => sum + habit.daysCompleted);
+          final int totalPossibleDays = habits.length * 30;
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16.0),
-            itemCount: habits.length,
-            itemBuilder: (context, index) {
-              final habit = habits[index];
-              return _buildHabitCard(context, habit);
-            },
+          return CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: GlobalProgressSummary(
+                  totalCompletedDays: totalCompletedDays,
+                  totalPossibleDays: totalPossibleDays,
+                ),
+              ),
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(16, 10, 16, 5),
+                  child: Text('Retos Activos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: SliverList.builder(
+                  itemCount: habits.length,
+                  itemBuilder: (context, index) {
+                    final habit = habits[index];
+                    return _buildHabitCard(context, habit);
+                  },
+                ),
+              ),
+            ],
           );
         },
       ),
-      // Botón para añadir un nuevo hábito
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: Implementar navegación a HabitFormScreen
-          _showMockAddHabit(context); 
-          context.goNamed('add-habit');
-        },
-        backgroundColor: Colors.teal.shade400,
+        onPressed: () => context.pushNamed('add-habit'),
+        backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         child: const Icon(Icons.add_rounded, size: 30),
       ),
-    );
-  }
-
-  // Widget para el estado vacío (cuando no hay hábitos)
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.rocket_launch_rounded, size: 80, color: Colors.deepPurple.shade200),
-            const SizedBox(height: 20),
-            const Text(
-              '¡Aún no tienes hábitos!',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Presiona el botón "+" para empezar tu primer reto de 30 días.',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Widget auxiliar para mostrar la tarjeta de cada hábito
-  Widget _buildHabitCard(BuildContext context, Habit habit) {
-    // Aquí usamos el StreamBuilder para obtener el progreso real
-    
-    return Card(
-      margin: const EdgeInsets.only(bottom: 15),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-        side: BorderSide(/*color: habit.color.withOpacity(0.5),*/ width: 1.5),
-      ),
-      elevation: 5,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(15),
-        onTap: () {
-          // Navega a la pantalla de detalle, pasando el hábito y el servicio
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (ctx) => HabitDetailScreen(
-                habit: habit,
-                habitService: habitService,
-              ),
-            ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Row(
-            children: [
-              // Icono de color
-              Container(
-                width: 45,
-                height: 45,
-                decoration: BoxDecoration(
-                  //color: habit.color.withOpacity(0.8),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                /*
-                child: Icon(
-                  _getIconForCategory(habit.category), // Icono basado en la categoría
-                  color: Colors.white,
-                  size: 28,
-                ),
-                */
-              ),
-              const SizedBox(width: 15),
-              // Detalles del Hábito
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      habit.name,
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-
-                      //'Meta diaria: ${habit.duration} min | ${habit.category}',
-                      'Meta diaria: ${habit.duration} min ',
-                      style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // **STREAMBUILDER INTEGRADO PARA EL PROGRESO REAL**
-                    StreamBuilder<int>(
-                      stream: habitService.getCompletedDaysCountStream(habit.id),
-                      builder: (context, snapshot) {
-                        // Si hay error, o está cargando, asumimos 0 días completados
-                        final completedDays = snapshot.data ?? 0; 
-                        const totalDays = 30;
-                        
-                        final progress = completedDays / totalDays;
-                        final remainingDays = totalDays - completedDays;
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Barra de Progreso
-                            LinearProgressIndicator(
-                              value: progress,
-                              backgroundColor: Colors.grey.shade200,
-                              //valueColor: AlwaysStoppedAnimation<Color>(habit.color),
-                              minHeight: 8,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            const SizedBox(height: 5),
-                            Text(
-                              '$remainingDays días restantes (${completedDays} completados)',
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right_rounded, color: Colors.grey),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Función simple para obtener iconos basados en la categoría
-  
-  IconData _getIconForCategory(String category) {
-    switch (category.toLowerCase()) {
-      case 'salud':
-        return Icons.fitness_center_rounded;
-      case 'estudio':
-        return Icons.book_rounded;
-      case 'productividad':
-        return Icons.work_outline_rounded;
-      case 'finanzas':
-        return Icons.account_balance_wallet_rounded;
-      default:
-        return Icons.local_activity_rounded;
-    }
-  }
-
-  // Función para añadir un hábito
-  void _showMockAddHabit(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Añadir Hábito'),
-        content: const Text('Aquí se abriría la pantalla/modal para crear un nuevo hábito.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cerrar'),
-          ),
-        ],
-      ),
+      bottomNavigationBar: _buildBottomNavBar(context),
     );
   }
 }
