@@ -3,82 +3,117 @@ import '../models/habit.dart';
 import '../providers/day_progress.dart';
 
 class HabitService {
+  // Asegúrate de definir _db si usas la notación _db.collection, o usa habitsRef.
+  // Aquí asumo que usaremos habitsRef.
   final CollectionReference habitsRef =
       FirebaseFirestore.instance.collection('habits');
 
-  /// Crea un nuevo hábito en Firestore
+  // Si no tienes esta referencia, agrégala:
+  // final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+
   Future<void> addHabit(Habit habit) async {
     await habitsRef.doc(habit.id).set(habit.tojson());
   }
 
-  /// Devuelve un stream de lista de hábitos convertidos al modelo Habit
   Stream<List<Habit>> getHabitsStream() {
     return habitsRef.snapshots().map((snapshot) {
       return snapshot.docs
-          .map((doc) => Habit.fromJson(doc.data() as Map<String, dynamic>))
+          .map((d) => Habit.fromJson(d.data() as Map<String, dynamic>))
           .toList();
     });
   }
-
-Stream<int> getCompletedDaysCountStream(String habitId) {
-return habitsRef
-.doc(habitId)
- .collection('progress')
-// Filtra solo los documentos donde 'isCompleted' sea true
- .where('isCompleted', isEqualTo: true)
- .snapshots()
-.map((snapshot) => snapshot.docs.length); // Devuelve el conteo de documentos
-}
-  /// Obtiene un hábito por ID
-  Future<Habit?> getHabitById(String id) async {
-    final doc = await habitsRef.doc(id).get();
-    if (!doc.exists) return null;
-    return Habit.fromJson(doc.data() as Map<String, dynamic>);
-  }
-
-  /// Actualiza un hábito existente
-  Future<void> updateHabit(Habit habit) async {
-    await habitsRef.doc(habit.id).update(habit.tojson());
-  }
-
-  /// Elimina un hábito
-  Future<void> deleteHabit(String id) async {
-    await habitsRef.doc(id).delete();
-  }
-
-  /// Obtiene el progreso del día actual como stream
-  Stream<DayProgress?> getTodayProgressStream(Habit habit) {
- final today = DateTime.now();
- final daysSinceStart = today.difference(habit.createdAt).inDays + 1;
- final todayId = 'day-$daysSinceStart';
-
-return habitsRef
- .doc(habit.id)
-.collection('progress')
- .doc(todayId)
- .snapshots()
-  .map((doc) =>
- doc.exists ? DayProgress.fromDoc(doc.id, doc.data()!) : null);
-}
-
-  /// Guarda el progreso de un día
-  Future<void> saveDayProgress(String habitId, DayProgress progress) async {
-    await habitsRef
+    
+  Stream<int> getCompletedDaysCountStream(String habitId) {
+    return habitsRef
         .doc(habitId)
         .collection('progress')
-        .doc(progress.id)
-        .set(progress.toMap());
+        .where('isCompleted', isEqualTo: true)
+        .snapshots()
+        .map((snap) => snap.docs.length);
+  }
+  
+  Stream<Map<String, int>> getGlobalProgressSummary() {
+    // ... (lógica del resumen global) ...
+    return getHabitsStream().map((habits) {
+      int totalCompleted = 0;
+      int totalPossible = habits.length * 30; // 30 días por reto
+
+      for (var habit in habits) {
+        totalCompleted += habit.daysCompleted;
+      }
+      
+      return {
+        'completed': totalCompleted,
+        'possible': totalPossible,
+      };
+    });
   }
 
-  /// Devuelve stream de todo el progreso del hábito (para la cuadrícula de 30 días)
-  Stream<List<DayProgress>> getProgressStream(Habit habit) {
-    return habitsRef
+  Future<void> completeToday(Habit habit) async {
+    final today = DateTime.now();
+    final dayIndex = today.difference(habit.createdAt).inDays + 1;
+    final todayId = "day-$dayIndex";
+
+    final progress = DayProgress(
+      id: todayId,
+      date: today,
+      timeSpentSeconds: habit.duration * 60,
+      isCompleted: true,
+    );
+
+    await habitsRef
         .doc(habit.id)
         .collection('progress')
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-
-            .map((doc) => DayProgress.fromDoc(doc.id, doc.data()!))
-            .toList());
+        .doc(todayId)
+        .set(progress.toMap());
   }
+  
+  // =======================================================
+  // 🚀 MÉTODOS AÑADIDOS PARA LA PANTALLA DE DETALLE (Grid)
+  // =======================================================
+
+  // 1. Obtener Stream de Fechas Completadas
+  Stream<List<DateTime>> getCompletedDatesStream(String habitId) {
+    return habitsRef.doc(habitId).collection('completed_dates').snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        // Asume que el documento 'completed_dates' tiene un campo 'date' de tipo Timestamp
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data != null && data.containsKey('date')) {
+            return (data['date'] as Timestamp).toDate(); 
+        }
+        // Si no existe, devolver una fecha segura o manejar el error
+        // En un escenario real, esto no debería ocurrir si el toggle funciona bien.
+        return DateTime(1900); 
+      }).where((date) => date.year > 1900).toList(); // Filtramos fechas inválidas
+    });
+  }
+
+  // 2. Marcar/Desmarcar un Día (Función central de la cuadrícula)
+  Future<void> toggleDayCompletion(String habitId, DateTime date, bool isCompleted) async {
+    // Usamos el formato de fecha (YYYY-MM-DD) como ID de documento para la fecha
+    final dateKey = date.toIso8601String().substring(0, 10);
+    final dateRef = habitsRef.doc(habitId).collection('completed_dates').doc(dateKey);
+
+    if (isCompleted) {
+      // Si ya estaba completado (isCompleted == true), lo eliminamos (desmarcar)
+      await dateRef.delete();
+    } else {
+      // Si no estaba completado (isCompleted == false), lo añadimos (marcar)
+      // Guardamos la fecha con la hora a medianoche (00:00:00)
+      final dateToSave = DateTime(date.year, date.month, date.day);
+      await dateRef.set({'date': Timestamp.fromDate(dateToSave)});
+    }
+    
+  
+  }
+  
+  // Stream para obtener un solo hábito por ID
+  Stream<Habit?> getHabitStream(String habitId) {
+    return habitsRef.doc(habitId).snapshots().map((snapshot) {
+        if (!snapshot.exists) return null;
+        return Habit.fromJson(snapshot.data() as Map<String, dynamic>);
+    });
+  }
+
 }
