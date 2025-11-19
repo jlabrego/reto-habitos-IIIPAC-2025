@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:go_router/go_router.dart';
 import '../models/habit.dart';
 import '../providers/habit_service.dart';
 
@@ -18,7 +19,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
   String _name = '';
   String _category = 'Salud';
   int _duration = 10;
-  Color _selectedColor = Colors.deepPurple;
+  Color _selectedColor = Colors.deepPurple; // Color por defecto
 
   final List<String> _categories = [
     'Salud',
@@ -39,13 +40,15 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
           child: BlockPicker(
             pickerColor: _selectedColor,
             onColorChanged: (color) {
-              setState(() => _selectedColor = color);
+              // La actualización del estado se hace dentro del diálogo
+              setState(() => _selectedColor = color); 
             },
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            // Usamos Navigator.pop aquí solo para cerrar el diálogo, no la pantalla completa
+            onPressed: () => Navigator.pop(ctx), 
             child: const Text('Cerrar'),
           ),
         ],
@@ -54,35 +57,40 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
   }
 
   Future<void> _save() async {
+    // 1. Validación y Guardado de Formulario
     if (!_formKey.currentState!.validate()) return;
-
     _formKey.currentState!.save();
 
     setState(() => _isSaving = true);
 
-    // Crear ID único
+    // 2. Crear ID único
     final id = DateTime.now().millisecondsSinceEpoch.toString();
 
+    final String colorString = _selectedColor.value.toRadixString(16).padLeft(8, '0');
+
+    // 4. Crear objeto Habit
     final habit = Habit(
       id: id,
       name: _name,
-      //category: _category,
+      category: _category,
       duration: _duration,
-      createdAt: DateTime.now(), 
-      description: 'Prueba', 
-      streak: 0, 
+      createdAt: DateTime.now(),
+      description: _category, 
+      streak: 0,
       daysCompleted: 0,
-      //color: _selectedColor,
+      colorHex: colorString,
     );
 
     try {
+      // 5. Guardar en Firestore
       await widget.habitService.addHabit(habit);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Hábito creado con éxito")),
         );
-        Navigator.pop(context);
+        // 6. Cerrar la pantalla usando GoRouter
+        context.pop();
       }
     } catch (e) {
       if (mounted) {
