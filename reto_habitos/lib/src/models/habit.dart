@@ -1,5 +1,3 @@
-// File: src/models/habit.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Habit {
@@ -8,10 +6,10 @@ class Habit {
   final String description;
   final int duration;
   final int daysCompleted;
-  final int streak;       // ⬅️ ¡AÑADIR STREAK!
+  final int streak;      
   final DateTime createdAt;
   final String category;
-  final String? colorHex; // ⬅️ ¡AÑADIR COLORHEX!
+  final String? colorHex; 
 
   Habit({
     required this.id,
@@ -19,7 +17,7 @@ class Habit {
     required this.description,
     required this.duration,
     required this.daysCompleted,
-    required this.streak,       // ⬅️ AÑADIR AL CONSTRUCTOR
+    required this.streak,       
     required this.createdAt,
     required this.category,
     this.colorHex,
@@ -33,25 +31,25 @@ class Habit {
       description: json['description'] as String,
       duration: json['duration'] as int,
       daysCompleted: json['daysCompleted'] as int,
-      streak: json['streak'] as int,      // ⬅️ Leer streak
+      streak: json['streak'] as int,      
       createdAt: (json['createdAt'] as Timestamp).toDate(),
       category: json['category'] as String? ?? 'Otro',
-      colorHex: json['colorHex'] as String?, // ⬅️ Leer colorHex
+      colorHex: json['colorHex'] as String?,
     );
   }
 
   // Método tojson modificado
   Map<String, dynamic> tojson() {
     return {
-      'id': id,
+      //'id': id,
       'name': name,
       'description': description,
       'duration': duration,
       'daysCompleted': daysCompleted,
-      'streak': streak,        // ⬅️ Guardar streak
+      'streak': streak,       
       'createdAt': Timestamp.fromDate(createdAt),
       'category': category,
-      'colorHex': colorHex,    // ⬅️ Guardar colorHex
+      'colorHex': colorHex,    
     };
   }
 

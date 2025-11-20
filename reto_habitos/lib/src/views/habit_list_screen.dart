@@ -12,16 +12,16 @@ class HabitListScreen extends StatelessWidget {
   // 1. Método auxiliar para íconos
   IconData _getIconForCategory(String description) {
     switch (description.toLowerCase()) {
-    case 'salud': 
-      return Icons.fitness_center_rounded;
-    case 'estudio': 
-      return Icons.book_rounded;           
-    case 'productividad': 
-      return Icons.work_outline_rounded; 
-    case 'finanzas': 
-      return Icons.account_balance_wallet_rounded; 
-    default: 
-      return Icons.local_activity_rounded;
+      case 'salud': 
+        return Icons.fitness_center_rounded;
+      case 'estudio': 
+        return Icons.book_rounded;          
+      case 'productividad': 
+        return Icons.work_outline_rounded; 
+      case 'finanzas': 
+        return Icons.account_balance_wallet_rounded; 
+      default: 
+        return Icons.local_activity_rounded;
     }
   }
 
@@ -36,7 +36,6 @@ class HabitListScreen extends StatelessWidget {
       if (hex.length == 6) {
         colorValue = int.tryParse('FF$hex', radix: 16) ?? defaultColorValue;
       } else if (hex.length >= 8) {
-        // AARRGGBB -> Usar tal cual
         colorValue = int.tryParse(hex, radix: 16) ?? defaultColorValue;
       } else {
         colorValue = defaultColorValue;
@@ -47,11 +46,13 @@ class HabitListScreen extends StatelessWidget {
     
     final Color habitColor = Color(colorValue);
     
-
+    // 🟢 EL StreamBuilder en la tarjeta individual es CORRECTO.
+    // Garantiza que la tarjeta lea el conteo de la subcolección.
     return StreamBuilder<int>(
       stream: habitService.getCompletedDaysCountStream(habit.id), 
       builder: (context, countSnapshot) {
-        final completedDays = countSnapshot.data ?? habit.daysCompleted; 
+        // Usar 0 como valor de respaldo si el Stream aún no tiene datos.
+        final completedDays = countSnapshot.data ?? 0; 
         const totalDays = 30;
         final progress = completedDays / totalDays;
         final remainingDays = totalDays - completedDays;
@@ -101,6 +102,7 @@ class HabitListScreen extends StatelessWidget {
                           minHeight: 6, borderRadius: BorderRadius.circular(3),
                         ),
                         const SizedBox(height: 5),
+                        // 🟢 Usa los valores calculados con el Stream:
                         Text('$remainingDays días restantes ($completedDays completados)', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
                       ],
                     ),
@@ -114,8 +116,15 @@ class HabitListScreen extends StatelessWidget {
       },
     );
   }
-  Widget _buildBottomNavBar(BuildContext context) { /* ... */ return Container(height: 60); }
-  Widget _buildEmptyState(BuildContext context) { /* ... */ return const Center(child: Text('No hay retos activos.')); }
+  
+  Widget _buildBottomNavBar(BuildContext context) { 
+    // Puedes definir aquí tu BottomNavigationBar si lo necesitas
+    return Container(height: 0); // Placeholder
+  }
+  
+  Widget _buildEmptyState(BuildContext context) { 
+    return const Center(child: Text('No hay retos activos.')); 
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -125,47 +134,62 @@ class HabitListScreen extends StatelessWidget {
         title: const Text('Tus Retos de 30 Días', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
         backgroundColor: Colors.grey.shade50, elevation: 0, centerTitle: true,
       ),
-      body: StreamBuilder<List<Habit>>(
-        stream: habitService.getHabitsStream(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final habits = snapshot.data ?? [];
-          if (habits.isEmpty) return _buildEmptyState(context);
+      
+      // 🟢 1. PRIMER STREAM (GLOBAL PROGRESS)
+      body: StreamBuilder<Map<String, int>>(
+        stream: habitService.getGlobalProgressSummary(), 
+        builder: (context, globalSnapshot) {
+          
+          final completed = globalSnapshot.data?['completed'] ?? 0;
+          final possible = globalSnapshot.data?['possible'] ?? 0;
 
-          // Lógica de cálculo de progreso global
-          final int totalCompletedDays = habits.fold<int>(0, (sum, habit) => sum + habit.daysCompleted);
-          final int totalPossibleDays = habits.length * 30;
+          // 🟢 2. SEGUNDO STREAM (HABIT LIST)
+          return StreamBuilder<List<Habit>>(
+            stream: habitService.getHabitsStream(),
+            builder: (context, habitSnapshot) {
+              
+              if (habitSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-          return CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: GlobalProgressSummary(
-                  totalCompletedDays: totalCompletedDays,
-                  totalPossibleDays: totalPossibleDays,
-                ),
-              ),
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(16, 10, 16, 5),
-                  child: Text('Retos Activos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverList.builder(
-                  itemCount: habits.length,
-                  itemBuilder: (context, index) {
-                    final habit = habits[index];
-                    return _buildHabitCard(context, habit);
-                  },
-                ),
-              ),
-            ],
+              final habits = habitSnapshot.data ?? [];
+              if (habits.isEmpty) return _buildEmptyState(context);
+
+              return CustomScrollView(
+                slivers: [
+                  // 🟢 Usa los valores del Stream Global
+                  SliverToBoxAdapter(
+                    child: GlobalProgressSummary(
+                      totalCompletedDays: completed, 
+                      totalPossibleDays: possible,    
+                    ),
+                  ),
+                  
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(16, 10, 16, 5),
+                      child: Text('Retos Activos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    ),
+                  ),
+                  
+                  // La lista usa el _buildHabitCard, que tiene su propio Stream
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    sliver: SliverList.builder(
+                      itemCount: habits.length,
+                      itemBuilder: (context, index) {
+                        final habit = habits[index];
+                        return _buildHabitCard(context, habit);
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
           );
         },
       ),
+
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.pushNamed('add-habit'),
         backgroundColor: Colors.deepPurple,
@@ -173,6 +197,7 @@ class HabitListScreen extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         child: const Icon(Icons.add_rounded, size: 30),
       ),
+
       bottomNavigationBar: _buildBottomNavBar(context),
     );
   }
