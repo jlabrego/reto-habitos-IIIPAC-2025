@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-//import 'package:reto_habitos/src/models/habit.dart';
 
 class DayProgress {
   final String id;              // Ej: "day-1", "day-2"
@@ -15,7 +14,7 @@ class DayProgress {
   });
 
   // Convierte a Map para guardar en Firestore
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
       'date': Timestamp.fromDate(date),
       'timeSpentSeconds': timeSpentSeconds,
@@ -24,7 +23,7 @@ class DayProgress {
   }
 
   // Construye desde documento Firestore
-  static DayProgress fromDoc(String id, Map<String, dynamic> data) {
+  static DayProgress fromJson(String id, Map<String, dynamic> data) {
     return DayProgress(
       id: id,
       date: (data['date'] as Timestamp).toDate(),

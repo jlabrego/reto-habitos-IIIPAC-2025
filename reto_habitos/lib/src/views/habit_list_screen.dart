@@ -46,7 +46,6 @@ class HabitListScreen extends StatelessWidget {
     
     final Color habitColor = Color(colorValue);
     
-    // 🟢 EL StreamBuilder en la tarjeta individual es CORRECTO.
     // Garantiza que la tarjeta lea el conteo de la subcolección.
     return StreamBuilder<int>(
       stream: habitService.getCompletedDaysCountStream(habit.id), 
@@ -102,7 +101,7 @@ class HabitListScreen extends StatelessWidget {
                           minHeight: 6, borderRadius: BorderRadius.circular(3),
                         ),
                         const SizedBox(height: 5),
-                        // 🟢 Usa los valores calculados con el Stream:
+                        //Usa los valores calculados con el Stream:
                         Text('$remainingDays días restantes ($completedDays completados)', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
                       ],
                     ),
@@ -117,9 +116,8 @@ class HabitListScreen extends StatelessWidget {
     );
   }
   
-  Widget _buildBottomNavBar(BuildContext context) { 
-    // Puedes definir aquí tu BottomNavigationBar si lo necesitas
-    return Container(height: 0); // Placeholder
+  Widget _buildBottomNavBar(BuildContext context) {
+    return Container(height: 0); 
   }
   
   Widget _buildEmptyState(BuildContext context) { 
@@ -135,7 +133,7 @@ class HabitListScreen extends StatelessWidget {
         backgroundColor: Colors.grey.shade50, elevation: 0, centerTitle: true,
       ),
       
-      // 🟢 1. PRIMER STREAM (GLOBAL PROGRESS)
+      //  1. PRIMER STREAM (GLOBAL PROGRESS)
       body: StreamBuilder<Map<String, int>>(
         stream: habitService.getGlobalProgressSummary(), 
         builder: (context, globalSnapshot) {
@@ -143,7 +141,7 @@ class HabitListScreen extends StatelessWidget {
           final completed = globalSnapshot.data?['completed'] ?? 0;
           final possible = globalSnapshot.data?['possible'] ?? 0;
 
-          // 🟢 2. SEGUNDO STREAM (HABIT LIST)
+          // 2. SEGUNDO STREAM (HABIT LIST)
           return StreamBuilder<List<Habit>>(
             stream: habitService.getHabitsStream(),
             builder: (context, habitSnapshot) {
@@ -157,7 +155,7 @@ class HabitListScreen extends StatelessWidget {
 
               return CustomScrollView(
                 slivers: [
-                  // 🟢 Usa los valores del Stream Global
+                  // Usa los valores del Stream Global
                   SliverToBoxAdapter(
                     child: GlobalProgressSummary(
                       totalCompletedDays: completed, 
@@ -171,8 +169,7 @@ class HabitListScreen extends StatelessWidget {
                       child: Text('Retos Activos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
                     ),
                   ),
-                  
-                  // La lista usa el _buildHabitCard, que tiene su propio Stream
+           
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     sliver: SliverList.builder(

@@ -2,27 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-
-// Importaciones de tus archivos locales
 import 'src/views/habit_detail_screen.dart';
 import 'src/views/habit_list_screen.dart';
 import 'src/providers/habit_service.dart';
 import 'src/widgets/create_habit_form.dart';
-
+import 'src/views/timer_screen.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Inicialización de Firebase
   await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
   );
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  // Instancia del servicio de datos
   final HabitService habitService = HabitService();
   
-  // --- Configuración de Rutas con GoRouter ---
   late final GoRouter _router = GoRouter(
     initialLocation: '/habits',
 
@@ -46,6 +42,22 @@ class MyApp extends StatelessWidget {
                 habitService: habitService,
               );
             },
+            //Sub-rutas del Detalle
+            routes: [ 
+              // 4. Cronómetro del hábito: /habits/:id/timer
+              GoRoute(
+                path: 'timer', 
+                name: 'habit-timer',
+                builder: (context, state) {
+                  final habitId = state.pathParameters['id']!;
+                  
+                  return TimerScreen(
+                    habitId: habitId,
+                    habitService: habitService,
+                  );
+                },
+              ),
+            ],
           ),
         ],
       ),

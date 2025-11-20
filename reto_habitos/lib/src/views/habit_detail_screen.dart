@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart'; 
 import '../models/habit.dart';
 import '../providers/habit_service.dart';
 
@@ -11,20 +12,18 @@ class HabitDetailScreen extends StatelessWidget {
         required this.habitId,
         required this.habitService,
     });
-
-    // =======================================================
-    // ⚙️ WIDGETS AUXILIARES
-    // =======================================================
+    //WIDGETS AUXILIARES
     
     // 1. Obtener Color
     Color _getHabitColor(Habit habit) {
         final String? hex = habit.colorHex;
+        // Usamos un valor por defecto si el campo es nulo o inválido 
         const int defaultColorValue = 0xFF673AB7; 
 
         int colorValue;
         if (hex != null && hex.length >= 6) {
-            // Asegura que tenga el alfa (FF) al inicio si solo tiene 6 dígitos
-            colorValue = int.tryParse(hex.length == 6 ? 'FF$hex' : hex, radix: 16) ?? defaultColorValue;
+            String cleanHex = hex.startsWith('#') ? hex.substring(1) : hex;
+            colorValue = int.tryParse(cleanHex.length == 6 ? 'FF$cleanHex' : cleanHex, radix: 16) ?? defaultColorValue;
         } else {
             colorValue = defaultColorValue;
         }
@@ -56,20 +55,17 @@ class HabitDetailScreen extends StatelessWidget {
         );
     }
 
-    // 4. 🟢 WIDGET PRINCIPAL DE ESTADÍSTICAS (Usa StreamBuilder para el conteo de días)
+    // 4. WIDGET PRINCIPAL DE ESTADÍSTICAS
     Widget _buildStatsAndProgress(Habit habit, Color color, HabitService service) {
         return StreamBuilder<int>(
             stream: service.getCompletedDaysCountStream(habit.id),
             builder: (context, countSnapshot) {
                 
-                // Usar el conteo REAL de la subcolección.
                 final completedDays = countSnapshot.data ?? 0; 
                 const totalDays = 30;
                 final remainingDays = totalDays - completedDays;
                 final progress = completedDays / totalDays;
                 
-                // Nota: El campo 'streak' sigue viniendo del modelo, asumiendo
-                // que será actualizado por Cloud Functions o lógica cliente más adelante.
                 final streak = habit.streak; 
                 
                 return Card(
@@ -82,7 +78,6 @@ class HabitDetailScreen extends StatelessWidget {
                                 Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                                     children: [
-                                        // Los contadores usan 'completedDays' real
                                         _buildStat('Días Compl.', completedDays.toString(), color),
                                         _buildStat('Racha Actual', streak.toString(), color),
                                         _buildStat('Días Rest.', remainingDays.toString(), color),
@@ -109,19 +104,23 @@ class HabitDetailScreen extends StatelessWidget {
         );
     }
 
+    // 5. WIDGET DE CUADRÍCULA DE DÍAS
     Widget _buildDayGrid(BuildContext context, Habit habit, Color color, HabitService service) {
-        // Obtenemos un Stream de las fechas completadas reales (Firestore)
         return StreamBuilder<List<DateTime>>(
             stream: service.getCompletedDatesStream(habit.id),
             builder: (context, snapshot) {
                 
                 final completedDates = snapshot.data ?? [];
                 
-                // Calcula el índice del día actual basado en la fecha de creación
                 final today = DateTime.now();
                 final creationDate = habit.createdAt;
                 final int difference = today.difference(creationDate).inDays;
                 final currentDayIndex = difference + 1; 
+                
+                // Función auxiliar para normalizar las fechas a solo día, mes y año
+                final Set<String> normalizedCompletedDates = completedDates
+                    .map((date) => '${date.year}-${date.month}-${date.day}')
+                    .toSet();
 
                 return GridView.builder(
                     shrinkWrap: true,
@@ -135,17 +134,14 @@ class HabitDetailScreen extends StatelessWidget {
                     itemBuilder: (context, index) {
                         final dayNumber = index + 1;
                         final specificDate = creationDate.add(Duration(days: index));
-                        
+                        final normalizedSpecificDate = '${specificDate.year}-${specificDate.month}-${specificDate.day}';
+
                         // Comprobación real si la fecha está en la lista de fechas completadas
-                        final isCompleted = completedDates.any(
-                            (date) => date.year == specificDate.year &&
-                                      date.month == specificDate.month &&
-                                      date.day == specificDate.day
-                        );
+                        final isCompleted = normalizedCompletedDates.contains(normalizedSpecificDate);
 
                         final isTodayOrPast = dayNumber <= currentDayIndex;
-                        // Permite marcar/desmarcar hasta el final del día de mañana
-                        final canToggle = specificDate.isBefore(today.add(const Duration(days: 1))); 
+                        // Permite marcar/desmarcar hasta el final del día de hoy
+                        final canToggle = specificDate.isBefore(today.add(const Duration(days: 1))) || specificDate.isAtSameMomentAs(DateTime(today.year, today.month, today.day)); 
 
                         return GestureDetector(
                             onTap: canToggle ? () {
@@ -161,8 +157,8 @@ class HabitDetailScreen extends StatelessWidget {
                                 decoration: BoxDecoration(
                                     // Púrpura si está completado, Blanco si es un día actual/pasado sin marcar
                                     color: isCompleted 
-                                             ? color.withOpacity(0.9) 
-                                             : (isTodayOrPast ? Colors.white : Colors.grey.shade200),
+                                            ? color.withOpacity(0.9) 
+                                            : (isTodayOrPast ? Colors.white : Colors.grey.shade200),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
                                         color: isTodayOrPast ? color : Colors.grey.shade300, 
@@ -183,10 +179,39 @@ class HabitDetailScreen extends StatelessWidget {
             }
         );
     }
+    
+    // 6. WIDGET DEL BOTÓN DE CRONÓMETRO 
+    Widget _buildTimerActionCard(BuildContext context, Habit habit, Color color) {
+        return Card(
+            color: color.withOpacity(0.1),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+              side: BorderSide(color: color.withOpacity(0.3), width: 1),
+            ),
+            child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                leading: Icon(Icons.timer, size: 40, color: color),
+                title: const Text(
+                    'Registrar Sesión Diaria',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(
+                    '${habit.duration} minutos | Toca para usar el cronómetro.',
+                    style: TextStyle(color: Colors.grey.shade600),
+                ),
+                trailing: Icon(Icons.arrow_forward_ios, size: 20, color: color),
+                onTap: () {
+                    // NAVEGACIÓN A LA RUTA DEL CRONÓMETRO
+                    context.goNamed('habit-timer', pathParameters: {'id': habit.id});
+                },
+            ),
+        );
+    }
+    
     @override
     Widget build(BuildContext context) {
         
-        // Usamos un StreamBuilder para obtener la información más reciente del hábito
         return StreamBuilder<Habit?>(
             stream: habitService.getHabitStream(habitId),
             builder: (context, snapshot) {
@@ -217,7 +242,11 @@ class HabitDetailScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                                 
-                                // SECCIÓN 1: RESUMEN DE PROGRESO (Usa el Stream del conteo real)
+                                // BOTÓN DE ACCIÓN DEL CRONÓMETRO
+                                _buildTimerActionCard(context, habit, habitColor),
+                                const SizedBox(height: 30),
+
+                                // SECCIÓN 1: RESUMEN DE PROGRESO
                                 _buildStatsAndProgress(habit, habitColor, habitService),
                                 const SizedBox(height: 30),
 
@@ -228,7 +257,6 @@ class HabitDetailScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 15),
                                 
-                                // Cuadrícula de días interactiva (Usa el Stream de las fechas)
                                 _buildDayGrid(context, habit, habitColor, habitService),
                                 const SizedBox(height: 30),
                                 
