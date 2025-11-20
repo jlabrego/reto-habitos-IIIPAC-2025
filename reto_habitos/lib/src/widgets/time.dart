@@ -1,9 +1,11 @@
+// timer_logic_widget.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/percent_indicator.dart';
-import '../models/habit.dart';
-import '../providers/habit_service.dart';
-import '../models/day_progress.dart';
+import '../models/habit.dart'; 
+import '../providers/habit_service.dart'; 
+import '../models/day_progress.dart'; 
 
 // Extensión para manipular colores (lighten/darken)
 extension ColorManipulation on Color {
@@ -37,12 +39,22 @@ class TimerLogicWidget extends StatefulWidget {
 }
 
 class _TimerLogicWidgetState extends State<TimerLogicWidget> {
-  late StreamSubscription<DayProgress?> _progressSubscription;
+  StreamSubscription<DayProgress?>? _progressSubscription; 
   Timer? _timer;
 
+  // Estado de Datos (Guardado en Firestore)
   int _totalSecondsSpentToday = 0;
+  
+  // Estado de UI (Sesión en curso)
   int _currentSessionSeconds = 0;
+  
+  // Tiempo base para mostrar en el círculo de progreso.
+  int _displaySeconds = 0; 
+  
   bool _isRunning = false;
+  
+  // Bandera para asegurar que la notificación de meta solo se muestre una vez.
+  bool _goalReachedNotified = false;
 
   late int _requiredSeconds;
   late Color _habitColor; 
@@ -56,20 +68,39 @@ class _TimerLogicWidgetState extends State<TimerLogicWidget> {
   }
 
   void _initializeProgressStream() {
+    _progressSubscription?.cancel(); 
+    
     _progressSubscription = widget.habitService
         .getTodayProgressStream(widget.habit.id)
         .listen((progress) {
+      if (!mounted) return;
+
       if (progress != null) {
         setState(() {
           _totalSecondsSpentToday = progress.timeSpentSeconds;
-          if (progress.isCompleted && _isRunning) { 
-            _handleCompletion();
+          
+          final bool isCompleted = _totalSecondsSpentToday >= _requiredSeconds;
+          
+          if (isCompleted) {
+            // Si ya está completado al cargar, el display base es 0 
+            _displaySeconds = 0; 
+            _goalReachedNotified = true; 
+          } else {
+            // Si no está completado, el display muestra el progreso guardado
+            _displaySeconds = _totalSecondsSpentToday;
+            _goalReachedNotified = false;
           }
         });
+      } else {
+         setState(() {
+             _totalSecondsSpentToday = 0;
+             _displaySeconds = 0;
+             _goalReachedNotified = false;
+         });
       }
     });
   }
-
+  
   Color _getHabitColor(Habit habit) {
       final String? hex = habit.colorHex;
       const int defaultColorValue = 0xFF673AB7; 
@@ -89,88 +120,132 @@ class _TimerLogicWidgetState extends State<TimerLogicWidget> {
       }
   }
 
-
   void _startTimer() {
     if (_isRunning) return;
-    if ((_totalSecondsSpentToday + _currentSessionSeconds) >= _requiredSeconds) return;
 
+    // Si se pulsa INICIAR/SEGUIR EXTRA y hay tiempo acumulado en la sesión (de la pausa automática),
+    // REGISTRAMOS ese tiempo primero antes de iniciar la cuenta extra.
+    if (_goalReachedNotified && _currentSessionSeconds > 0) {
+        _registerProgress(showSuccessSnackBar: false); 
+    }
+    
     setState(() {
       _isRunning = true;
     });
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+
       setState(() {
         _currentSessionSeconds++;
         
-        if ((_totalSecondsSpentToday + _currentSessionSeconds) >= _requiredSeconds) {
-            _handleCompletion();
+        final currentTotalTime = _totalSecondsSpentToday + _currentSessionSeconds;
+        
+        if (currentTotalTime >= _requiredSeconds && !_goalReachedNotified) {
+            _handleCompletion(); 
+            _goalReachedNotified = true; 
+            
+            // 🛑 PAUSA AUTOMÁTICA
+            _timer?.cancel(); 
+            setState(() {
+                _isRunning = false; // El botón cambia a SEGUIR EXTRA
+            });
+            // El tiempo queda en _currentSessionSeconds, esperando que el usuario lo guarde o lo reanude.
         }
       });
     });
   }
 
-  // Al parar/pausar, se registra el progreso.
   void _stopTimer() {
     _timer?.cancel();
     setState(() {
       _isRunning = false;
+      if ((_totalSecondsSpentToday + _currentSessionSeconds) < _requiredSeconds) {
+          _goalReachedNotified = false;
+      }
     });
-    // Registra automáticamente el progreso al pausar/detener.
+    // Registra el progreso al pausar manualmente.
     _registerProgress(showSuccessSnackBar: false); 
   }
   
-  // FUNCIÓN REINICIAR: Reinicia la sesión actual (descartando el tiempo)
   void _resetSession() {
     _timer?.cancel();
     setState(() {
       _isRunning = false;
-      // Esto pone a cero la sesión actual, pero respeta el progreso guardado (_totalSecondsSpentToday)
       _currentSessionSeconds = 0; 
+      if (_totalSecondsSpentToday < _requiredSeconds) {
+           _goalReachedNotified = false;
+      }
     });
-     ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sesión actual descartada.')));
+      if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Sesión actual descartada.')));
+      }
   }
 
   void _handleCompletion() {
-    _stopTimer(); 
-    ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('¡Meta diaria completada! 🎉')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('¡Meta diaria completada! 🎉')));
+      }
   }
 
-  // Registra el tiempo acumulado de la sesión actual y la reinicia
   void _registerProgress({bool showSuccessSnackBar = false}) async {
-    // Si no se corrió el cronómetro, no hacemos nada 
-    if (_currentSessionSeconds == 0) return; 
+    // 🛑 1. Check al inicio
+    if (!mounted || _currentSessionSeconds == 0) return; 
     
+    // Cancelar el stream para evitar la condición de carrera
+    _progressSubscription?.cancel();
+
     final newTotalSeconds = _totalSecondsSpentToday + _currentSessionSeconds;
     
+    // Guardar en Firestore
     await widget.habitService.completeTodayWithTime(
       widget.habit.id,
       newTotalSeconds,
       widget.habit.duration,
     );
+    
+    // 🛑 2. Check después del await (CRÍTICO para evitar setState after dispose)
+    if (!mounted) return; 
 
-    // Reinicia la sesión actual después de registrarla
+    // Actualización local de UI
     setState(() {
+      _totalSecondsSpentToday = newTotalSeconds; 
+      
+      final bool newGoalMet = newTotalSeconds >= _requiredSeconds;
+      
+      if (newGoalMet) {
+          _displaySeconds = 0;
+      } else {
+          _displaySeconds = newTotalSeconds; 
+      }
+
       _currentSessionSeconds = 0; 
     });
     
-    if (showSuccessSnackBar) {
+    // 🛑 3. Check antes de re-suscribir
+    if (mounted) { 
+        _initializeProgressStream(); 
+    }
+
+    if (showSuccessSnackBar && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Progreso registrado y sesión reiniciada: ${_formatTimeShort(newTotalSeconds)}')));
+            SnackBar(content: Text('Progreso registrado: ${_formatTimeShort(newTotalSeconds)}')));
     }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    // Cancelar la suscripción antes de llamar a _registerProgress
+    _progressSubscription?.cancel(); 
     
-    // Guardado automático al salir 
+    // Guardado final de progreso (el cual internamente verifica `mounted`)
     if (_currentSessionSeconds > 0) {
-       _registerProgress(showSuccessSnackBar: false); 
+        _registerProgress(showSuccessSnackBar: false); 
     }
     
-    _progressSubscription.cancel();
     super.dispose();
   }
 
@@ -188,15 +263,23 @@ class _TimerLogicWidgetState extends State<TimerLogicWidget> {
   String _formatTimeShort(int totalSeconds) {
     final int minutes = (totalSeconds % 3600) ~/ 60;
     final int seconds = totalSeconds % 60;
-    return '${minutes} m ${seconds} s';
+    return '${minutes}m ${_formatSeconds(seconds)}s';
+  }
+
+  String _formatSeconds(int seconds) {
+    return seconds.toString().padLeft(2, '0');
   }
 
 
   @override
   Widget build(BuildContext context) {
-    final currentTotal = _totalSecondsSpentToday + _currentSessionSeconds;
-    final isGoalMet = currentTotal >= _requiredSeconds;
-    final double progressValue = _requiredSeconds > 0 ? (currentTotal / _requiredSeconds).clamp(0.0, 1.0) : 0.0;
+    
+    final currentTotal = _displaySeconds + _currentSessionSeconds; 
+    
+    final isGoalMet = _totalSecondsSpentToday >= _requiredSeconds;
+    
+    final timeForProgressBar = (_totalSecondsSpentToday + _currentSessionSeconds).clamp(0, _requiredSeconds).toDouble();
+    final double progressValue = _requiredSeconds > 0 ? (timeForProgressBar / _requiredSeconds) : 0.0;
     
     final Color baseColor = _habitColor;
     final Color startGradientColor = baseColor.lighten(0.3);
@@ -233,7 +316,7 @@ class _TimerLogicWidgetState extends State<TimerLogicWidget> {
               ),
               const SizedBox(height: 40),
 
-              // CÍRCULO DE PROGRESO CON CircularPercentIndicator Y GRADIENTE
+              // CÍRCULO DE PROGRESO 
               SizedBox(
                 width: 320, 
                 height: 320,
@@ -265,6 +348,7 @@ class _TimerLogicWidgetState extends State<TimerLogicWidget> {
                               ),
                             ),
                             const SizedBox(height: 5),
+                            // Cronómetro principal
                             Text(
                               _formatTime(currentTotal),
                               style: const TextStyle(
@@ -274,13 +358,14 @@ class _TimerLogicWidgetState extends State<TimerLogicWidget> {
                               ),
                             ),
                             const SizedBox(height: 5),
+                            // Tiempo total acumulado (para referencia)
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.notifications_none_rounded, size: 16, color: Colors.grey.shade600),
+                                Icon(Icons.history, size: 16, color: Colors.grey.shade600),
                                 const SizedBox(width: 5),
                                 Text(
-                                  _formatTimeShort(_requiredSeconds), 
+                                  'Total Hoy: ${_formatTimeShort(_totalSecondsSpentToday)}', 
                                   style: TextStyle(
                                     fontSize: 16,
                                     color: Colors.grey.shade600,
@@ -288,7 +373,7 @@ class _TimerLogicWidgetState extends State<TimerLogicWidget> {
                                 ),
                               ],
                             ),
-                          ],
+                        ],
                       ),
                       linearGradient: LinearGradient( 
                         colors: [startGradientColor, endGradientColor],
@@ -304,7 +389,7 @@ class _TimerLogicWidgetState extends State<TimerLogicWidget> {
                       top: 1, 
                       child: Transform.translate(
                         offset: const Offset(0, -12.5), 
-                        child: progressValue > 0.99 
+                        child: isGoalMet 
                             ? Container(
                                 width: 18,
                                 height: 18,
@@ -336,7 +421,7 @@ class _TimerLogicWidgetState extends State<TimerLogicWidget> {
                 mainAxisAlignment: MainAxisAlignment.center, 
                 children: [
                   // Botón Izquierdo (Reiniciar/Resetear)
-                   FloatingActionButton(
+                    FloatingActionButton(
                     onPressed: _resetSession, 
                     heroTag: 'reset_tag',
                     backgroundColor: Colors.grey.shade300,
@@ -345,18 +430,18 @@ class _TimerLogicWidgetState extends State<TimerLogicWidget> {
                   
                   const SizedBox(width: 20),
                   
-                  // Botón Principal (Resume/Pause/Start)
+                  // Botón Principal (Resume/Pause/Start/Seguir Extra)
                   FloatingActionButton.extended(
-                    onPressed: isGoalMet ? null : (_isRunning ? _stopTimer : _startTimer),
+                    onPressed: _isRunning ? _stopTimer : _startTimer,
                     heroTag: 'play_pause_tag', 
                     backgroundColor: isGoalMet ? Colors.green.shade600 : (_isRunning ? Colors.red.shade600 : baseColor),
                     foregroundColor: Colors.white,
                     label: Text(
-                      isGoalMet ? "COMPLETADO" : (_isRunning ? "PAUSAR" : "INICIAR"), 
+                      _isRunning ? "PAUSAR" : (isGoalMet ? "SEGUIR EXTRA" : "INICIAR"), 
                       style: const TextStyle(fontWeight: FontWeight.bold)
                     ),
                     icon: Icon(
-                      isGoalMet ? Icons.check_circle_outline : (_isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded), 
+                      _isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded, 
                       size: 28
                     ),
                   ),

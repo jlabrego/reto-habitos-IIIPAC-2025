@@ -1,11 +1,18 @@
+// habit_service.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:rxdart/rxdart.dart';
-import '../models/habit.dart';
-import '../models/day_progress.dart';
+import 'package:intl/intl.dart'; 
+import '../models/habit.dart'; // Asegúrate de que esta ruta sea correcta
+import '../models/day_progress.dart'; // Asegúrate de que esta ruta sea correcta
 
 class HabitService {
     final FirebaseFirestore _firestore = FirebaseFirestore.instance;
     final CollectionReference habitsRef = FirebaseFirestore.instance.collection('habits');
+    
+    // Inyección de dependencias de tiempo para pruebas
+    final DateTime Function() _now;
+    HabitService({DateTime Function()? now}) : _now = now ?? DateTime.now;
 
     // 1. MÉTODOS BÁSICOS (CRUD)
 
@@ -94,7 +101,7 @@ class HabitService {
     }
 
     Future<void> updateStreak(String habitId) async {
-        final now = DateTime.now();
+        final now = _now(); // ✅ Usa la fecha inyectada
         final completedDates = await getCompletedDatesStream(habitId).first;
         final newStreak = _calculateStreak(now, completedDates);
         await habitsRef.doc(habitId).update({'streak': newStreak});
@@ -129,7 +136,7 @@ class HabitService {
     
     // FUNCIÓN DE REGISTRO DEL CRONÓMETRO 
     Future<void> completeTodayWithTime(String habitId, int totalSecondsSpent, int requiredDurationMinutes) async {
-        final today = DateTime.now();
+        final today = _now(); // ✅ Usa la fecha inyectada
         final dateKey = today.toIso8601String().substring(0, 10);
         final habitRef = habitsRef.doc(habitId);
 
@@ -166,7 +173,7 @@ class HabitService {
 
     // STREAM DE LECTURA DEL CRONÓMETRO 
     Stream<DayProgress?> getTodayProgressStream(String habitId) {
-        final today = DateTime.now();
+        final today = _now(); // ✅ Usa la fecha inyectada
         final dateKey = today.toIso8601String().substring(0, 10);
 
         return habitsRef

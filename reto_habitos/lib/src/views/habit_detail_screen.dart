@@ -106,6 +106,7 @@ class HabitDetailScreen extends StatelessWidget {
 
     // 5. WIDGET DE CUADRÍCULA DE DÍAS
     Widget _buildDayGrid(BuildContext context, Habit habit, Color color, HabitService service) {
+      final bool isTimeBased = habit.duration > 0;
         return StreamBuilder<List<DateTime>>(
             stream: service.getCompletedDatesStream(habit.id),
             builder: (context, snapshot) {
@@ -141,10 +142,11 @@ class HabitDetailScreen extends StatelessWidget {
 
                         final isTodayOrPast = dayNumber <= currentDayIndex;
                         // Permite marcar/desmarcar hasta el final del día de hoy
-                        final canToggle = specificDate.isBefore(today.add(const Duration(days: 1))) || specificDate.isAtSameMomentAs(DateTime(today.year, today.month, today.day)); 
-
+                        //final canToggle = specificDate.isBefore(today.add(const Duration(days: 1))) || specificDate.isAtSameMomentAs(DateTime(today.year, today.month, today.day)); 
+                        final bool allowManualToggle = !isTimeBased && isTodayOrPast;
                         return GestureDetector(
-                            onTap: canToggle ? () {
+                            onTap: allowManualToggle ? () {
+                              if (!isTimeBased && !isTodayOrPast) return;
                                 // Lógica para marcar/desmarcar el día en Firestore
                                 service.toggleDayCompletion(
                                     habit.id, 
