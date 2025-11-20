@@ -8,20 +8,21 @@ class HabitService {
     final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Mantenemos esta si la necesitas
     final CollectionReference habitsRef = FirebaseFirestore.instance.collection('habits');
 
-    // =======================================================
-    // 1. MÉTODOS BÁSICOS (CRUD)
-    // =======================================================
-
     Future<void> addHabit(Habit habit) async {
         await habitsRef.doc(habit.id).set(habit.tojson());
     }
 
     Stream<Habit?> getHabitStream(String habitId) {
-        return habitsRef.doc(habitId).snapshots().map((snapshot) {
-            if (!snapshot.exists) return null;
-            return Habit.fromJson(snapshot.data() as Map<String, dynamic>);
-        });
-    }
+  return habitsRef.doc(habitId).snapshots().map((snapshot) {
+    if (!snapshot.exists) return null;
+
+    final data = snapshot.data() as Map<String, dynamic>;
+    data['id'] = snapshot.id; 
+
+    return Habit.fromJson(data);
+  });
+}
+
 
     Stream<List<Habit>> getHabitsStream() {
         return habitsRef.snapshots().map((snapshot) {

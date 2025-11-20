@@ -109,7 +109,6 @@ class HabitDetailScreen extends StatelessWidget {
         );
     }
 
-    // 5. 🟢 WIDGET DE CUADRÍCULA (Usa StreamBuilder para las fechas completadas)
     Widget _buildDayGrid(BuildContext context, Habit habit, Color color, HabitService service) {
         // Obtenemos un Stream de las fechas completadas reales (Firestore)
         return StreamBuilder<List<DateTime>>(
@@ -184,10 +183,6 @@ class HabitDetailScreen extends StatelessWidget {
             }
         );
     }
-    
-    // =======================================================
-    // 🧱 BUILD PRINCIPAL
-    // =======================================================
     @override
     Widget build(BuildContext context) {
         
