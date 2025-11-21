@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:reto_habitos/src/views/login_page.dart';
+import 'package:reto_habitos/src/views/register.dart';
 import 'firebase_options.dart';
 import 'src/views/habit_detail_screen.dart';
+import 'src/views/welcome_page.dart';
 import 'src/views/habit_list_screen.dart';
 import 'src/providers/habit_service.dart';
 import 'src/widgets/create_habit_form.dart';
@@ -23,11 +26,31 @@ class MyApp extends StatelessWidget {
     initialLocation: '/habits',
 
     routes: [
+      //Pantalla de Bienvenida
+      GoRoute(
+        path: '/welcome',
+        name: 'welcome-page',
+        builder: (context, state) {
+          return WelcomePage();
+        } ),
+        GoRoute(
+        path: '/register',
+        name: 'register',
+        builder: (context, state) {
+          return Register();
+        } ),
+        //Pagina de inicio de sesion
+        GoRoute(
+        path: '/login-page',
+        name: 'login',
+        builder: (context, state) {
+          return LoginPage();
+        } ),
       // 1. Lista de hábitos
       GoRoute(
-        path: '/habits',
-        name: 'habit-list',
-        builder: (context, state) {
+         path: '/habits',
+         name: 'habit-list',
+         builder: (context, state) {
           return HabitListScreen(habitService: habitService);
         },
         routes: [
