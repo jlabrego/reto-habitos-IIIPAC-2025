@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:reto_habitos/src/shared/utils.dart';
 import '../models/habit.dart';
 import '../providers/habit_service.dart';
 import '../widgets/global_progress_summary.dart';
@@ -50,64 +52,122 @@ class HabitListScreen extends StatelessWidget {
     return StreamBuilder<int>(
       stream: habitService.getCompletedDaysCountStream(habit.id), 
       builder: (context, countSnapshot) {
+        
         // Usar 0 como valor de respaldo si el Stream aún no tiene datos.
         final completedDays = countSnapshot.data ?? 0; 
         const totalDays = 30;
         final progress = completedDays / totalDays;
         final remainingDays = totalDays - completedDays;
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          elevation: 3,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: () {
-              // Navegación a la pantalla de detalle
-              context.pushNamed(
-                'habit-detail',
-                pathParameters: {'id': habit.id},
-                extra: habit,
+        return Dismissible(
+          key: Key(habit.id),
+          confirmDismiss: (direction) async {
+            if(direction==DismissDirection.startToEnd){
+              return await Utils.showConfirm(context: context,
+              confirmButton: () {
+                FirebaseFirestore.instance
+                .collection('habits')
+                .doc(habit.id)
+                .delete();
+
+                if (!context.mounted) return;
+                context.pop(true);
+              },
+              
               );
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-              child: Row(
-                children: [
-                  Container(
-                    width: 50, height: 50,
-                    decoration: BoxDecoration(
-                      color: habitColor.withOpacity(0.15), 
-                      borderRadius: BorderRadius.circular(12)),
+            }
+          },
+
+          background: Container(
+                  padding: EdgeInsets.only(left: 16),
+                  color: Colors.red,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
                     child: Icon(
-                      _getIconForCategory(habit.category), 
-                      color: habitColor, 
-                      size: 30
+                      Icons.delete_outline_rounded,
+                      color: Colors.red[50],
+                      size: 30,
                     ),
                   ),
-                  const SizedBox(width: 15),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(habit.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87)),
-                        const SizedBox(height: 3),
-                        Text('Meta diaria: ${habit.duration} min', style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
-                        const SizedBox(height: 10),
-                        LinearProgressIndicator(
-                          value: progress,
-                          backgroundColor: Colors.grey.shade200,
-                          color: progress >= 1.0 ? Colors.green.shade400 : habitColor,
-                          minHeight: 6, borderRadius: BorderRadius.circular(3),
+                ),
+                
+          secondaryBackground: Container(
+                  padding: EdgeInsets.only(right: 16),
+                  color: Colors.blue,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Modificar',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[50],
                         ),
-                        const SizedBox(height: 5),
-                        //Usa los valores calculados con el Stream:
-                        Text('$remainingDays días restantes ($completedDays completados)', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-                      ],
-                    ),
+                      ),
+                      SizedBox(width: 12),
+                      Icon(
+                        Icons.edit_outlined,
+                        color: Colors.blue[50],
+                        size: 30,
+                      ),
+                    ],
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: Colors.grey, size: 30),
-                ],
+                ),
+          
+          child: Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            elevation: 3,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: () {
+                // Navegación a la pantalla de detalle
+                context.pushNamed(
+                  'habit-detail',
+                  pathParameters: {'id': habit.id},
+                  extra: habit,
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 50, height: 50,
+                      decoration: BoxDecoration(
+                        color: habitColor.withOpacity(0.15), 
+                        borderRadius: BorderRadius.circular(12)),
+                      child: Icon(
+                        _getIconForCategory(habit.category), 
+                        color: habitColor, 
+                        size: 30
+                      ),
+                    ),
+                    const SizedBox(width: 15),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(habit.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87)),
+                          const SizedBox(height: 3),
+                          Text('Meta diaria: ${habit.duration} min', style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+                          const SizedBox(height: 10),
+                          LinearProgressIndicator(
+                            value: progress,
+                            backgroundColor: Colors.grey.shade200,
+                            color: progress >= 1.0 ? Colors.green.shade400 : habitColor,
+                            minHeight: 6, borderRadius: BorderRadius.circular(3),
+                          ),
+                          const SizedBox(height: 5),
+                          //Usa los valores calculados con el Stream:
+                          Text('$remainingDays días restantes ($completedDays completados)', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right_rounded, color: Colors.grey, size: 30),
+                  ],
+                ),
               ),
             ),
           ),
@@ -133,25 +193,26 @@ class HabitListScreen extends StatelessWidget {
         backgroundColor: Colors.grey.shade50, elevation: 0, centerTitle: true,
       ),
       
-      //  1. PRIMER STREAM (GLOBAL PROGRESS)
-      body: StreamBuilder<Map<String, int>>(
-        stream: habitService.getGlobalProgressSummary(), 
-        builder: (context, globalSnapshot) {
-          
-          final completed = globalSnapshot.data?['completed'] ?? 0;
-          final possible = globalSnapshot.data?['possible'] ?? 0;
+      //CORRECCIÓN: Habits como StreamBuilder PRINCIPAL
+    body: StreamBuilder<List<Habit>>(
+      stream: habitService.getHabitsStream(),
+      builder: (context, habitSnapshot) {
+        
+        //Solo muestra la carga la primera vez:
+        if (habitSnapshot.connectionState == ConnectionState.waiting &&
+        !habitSnapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          // 2. SEGUNDO STREAM (HABIT LIST)
-          return StreamBuilder<List<Habit>>(
-            stream: habitService.getHabitsStream(),
-            builder: (context, habitSnapshot) {
-              
-              if (habitSnapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
+        final habits = habitSnapshot.data ?? [];
+        if (habits.isEmpty) return _buildEmptyState(context);
 
-              final habits = habitSnapshot.data ?? [];
-              if (habits.isEmpty) return _buildEmptyState(context);
+        //CORRECCIÓN: Progress como StreamBuilder SECUNDARIO
+        return StreamBuilder<Map<String, int>>(
+          stream: habitService.getGlobalProgressSummary(),
+          builder: (context, globalSnapshot) {
+            final completed = globalSnapshot.data?['completed'] ?? 0;
+            final possible = globalSnapshot.data?['possible'] ?? 0;
 
               return CustomScrollView(
                 slivers: [

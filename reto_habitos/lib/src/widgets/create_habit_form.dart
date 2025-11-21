@@ -18,6 +18,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
 
   String _name = '';
   String _category = 'Salud';
+  String _description='';
   int _duration = 10;
   Color _selectedColor = Colors.deepPurple; // Color por defecto
 
@@ -75,11 +76,14 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
       category: _category,
       duration: _duration,
       createdAt: DateTime.now(),
-      description: _category, 
+      description: _description, 
       streak: 0,
-      daysCompleted: 0,
+      //daysCompleted: 0,
       colorHex: colorString,
     );
+
+    //Controlador de la descripción
+    
 
     try {
       // 5. Guardar en Firestore
@@ -119,6 +123,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
           key: _formKey,
           child: ListView(
             children: [
+
               // NOMBRE
               TextFormField(
                 decoration: const InputDecoration(
@@ -146,6 +151,18 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                         ))
                     .toList(),
                 onChanged: (value) => setState(() => _category = value!),
+              ),
+
+              const SizedBox(height: 15),
+
+              //DESCRIPCIÓN
+              TextFormField(
+                decoration: const InputDecoration(
+                  labelText: "Descripción del hábito",
+                  border: OutlineInputBorder(),    
+                ),
+                maxLines: 3,
+                onSaved: (value) => _description = value ?? '',
               ),
 
               const SizedBox(height: 15),
@@ -197,6 +214,8 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
               ),
 
               const SizedBox(height: 25),
+
+              
 
               // BOTÓN GUARDAR
               ElevatedButton(

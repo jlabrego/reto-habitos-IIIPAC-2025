@@ -45,11 +45,10 @@ class HabitService {
     }
 
     // 2. STREAMS Y CONTEOS REACTIVOS
-
     Stream<int> getCompletedDaysCountStream(String habitId) {
         return habitsRef
             .doc(habitId)
-            .collection('completed_dates')
+            .collection('daysCompleted')
             .snapshots() 
             .map((snapshot) => snapshot.size);
     }
@@ -109,7 +108,7 @@ class HabitService {
 
     // 4. REGISTRO DIARIO (GRID Y CRONÓMETRO)
     Stream<List<DateTime>> getCompletedDatesStream(String habitId) {
-        return habitsRef.doc(habitId).collection('completed_dates').snapshots().map((snapshot) {
+        return habitsRef.doc(habitId).collection('daysCompleted').snapshots().map((snapshot) {
             return snapshot.docs.map((doc) {
                 final data = doc.data() as Map<String, dynamic>?;
                 if (data != null && data.containsKey('date')) {
@@ -122,7 +121,7 @@ class HabitService {
 
     Future<void> toggleDayCompletion(String habitId, DateTime date, bool isCompleted) async {
         final dateKey = date.toIso8601String().substring(0, 10);
-        final dateRef = habitsRef.doc(habitId).collection('completed_dates').doc(dateKey);
+        final dateRef = habitsRef.doc(habitId).collection('daysCompleted').doc(dateKey);
 
         if (isCompleted) {
             await dateRef.delete();
@@ -158,12 +157,12 @@ class HabitService {
         if (isGoalCompleted) {
             final dateToSave = DateTime(today.year, today.month, today.day);
             await habitRef
-                .collection('completed_dates')
+                .collection('daysCompleted')
                 .doc(dateKey)
                 .set({'date': Timestamp.fromDate(dateToSave)});
         } else {
             await habitRef
-                .collection('completed_dates')
+                .collection('daysCompleted')
                 .doc(dateKey)
                 .delete();
         }

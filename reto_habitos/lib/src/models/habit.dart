@@ -3,9 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Habit {
   final String id;
   final String name;
-  final String description;
+  final String? description;
   final int duration;
-  final int daysCompleted;
   final int streak;      
   final DateTime createdAt;
   final String category;
@@ -14,9 +13,8 @@ class Habit {
   Habit({
     required this.id,
     required this.name,
-    required this.description,
+    this.description,
     required this.duration,
-    required this.daysCompleted,
     required this.streak,       
     required this.createdAt,
     required this.category,
@@ -30,7 +28,6 @@ class Habit {
       name: json['name'] as String,
       description: json['description'] as String,
       duration: json['duration'] as int,
-      daysCompleted: json['daysCompleted'] as int,
       streak: json['streak'] as int,      
       createdAt: (json['createdAt'] as Timestamp).toDate(),
       category: json['category'] as String? ?? 'Otro',
@@ -45,7 +42,6 @@ class Habit {
       'name': name,
       'description': description,
       'duration': duration,
-      'daysCompleted': daysCompleted,
       'streak': streak,       
       'createdAt': Timestamp.fromDate(createdAt),
       'category': category,

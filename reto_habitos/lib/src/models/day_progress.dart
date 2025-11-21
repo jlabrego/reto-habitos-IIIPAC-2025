@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 class DayProgress {
   final String id;              // Ej: "day-1", "day-2"
@@ -18,17 +19,17 @@ class DayProgress {
     return {
       'date': Timestamp.fromDate(date),
       'timeSpentSeconds': timeSpentSeconds,
-      'isCompleted': isCompleted,
+      'Completed': isCompleted,
     };
   }
 
   // Construye desde documento Firestore
-  static DayProgress fromJson(String id, Map<String, dynamic> data) {
+    factory DayProgress.fromJson(String id, Map<String, dynamic> data) {
     return DayProgress(
       id: id,
       date: (data['date'] as Timestamp).toDate(),
       timeSpentSeconds: data['timeSpentSeconds'] ?? 0,
-      isCompleted: data['isCompleted'] ?? false,
+      isCompleted: data['Completed'] ?? false,
     );
   }
 }

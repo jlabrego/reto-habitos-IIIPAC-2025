@@ -41,8 +41,8 @@ class MyApp extends StatelessWidget {
         } ),
         //Pagina de inicio de sesion
         GoRoute(
-        path: '/login-page',
-        name: 'login',
+        path: '/login',
+        name: 'login-page',
         builder: (context, state) {
           return LoginPage();
         } ),

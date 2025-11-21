@@ -217,9 +217,12 @@ class HabitDetailScreen extends StatelessWidget {
         return StreamBuilder<Habit?>(
             stream: habitService.getHabitStream(habitId),
             builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+             
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                !snapshot.hasData) {
                     return const Scaffold(body: Center(child: CircularProgressIndicator()));
                 }
+               
                 
                 final habit = snapshot.data;
 
