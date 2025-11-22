@@ -20,7 +20,7 @@ class WelcomePage extends StatelessWidget {
                     TextSpan(
                       text:'¡Bienvenido! \n',
                       style: TextStyle(
-                        fontSize: 50,
+                        fontSize: 60,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -50,7 +50,7 @@ class WelcomePage extends StatelessWidget {
                   ) ,),
                   Expanded(child:WelcomeButton(
                     buttonText: 'Iniciar Sesion',
-                    onTap: '/login-page',
+                    onTap: '/login',
                     color: Colors.white,
                     textColor: Colors.deepPurple,
                   ) ,),

@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
   final HabitService habitService = HabitService();
   
   late final GoRouter _router = GoRouter(
-    initialLocation: '/habits',
+    initialLocation: '/welcome',
 
     routes: [
       //Pantalla de Bienvenida

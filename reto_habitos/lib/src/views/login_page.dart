@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:reto_habitos/src/shared/utils.dart';
 import 'package:reto_habitos/src/widgets/custom_Scaffold.dart';
+import 'package:reto_habitos/src/widgets/custom_text_field.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -10,6 +14,81 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final _formKey=GlobalKey<FormState>(); 
+  final _emailController=TextEditingController();
+  final _passwordController=TextEditingController();
+  bool _obscurePassword=true;
+  bool _isLoading=false;
+  bool rememberPassword = false;
+
+  @override
+  void dispose(){
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+ void _handleLogin() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+
+      try{
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim()
+        );
+
+        if(mounted) {
+          setState(() => _isLoading = false);
+          Utils.showSnackBar(context: context, title: 'Bienvenido');
+          context.push('/habits');
+        } 
+
+      } on FirebaseAuthException catch(e) {
+          
+          String message = 'Error desconocido';
+
+          if(e.code=='user-not-found'){
+            message='No existe una cuenta con ese correo';
+          } else if(e.code=='wrong-password'){
+            message='La contraseña es incorrecta';
+          } else if(e.code=='invalid-email'){
+            message = 'El formato de correo no es válido';
+          } else if(e.code=='user-disabled'){
+            message='Esta cuenta ha sido deshabilitada';
+          } 
+
+          if(mounted){
+            setState(() => _isLoading = false);
+            Utils.showSnackBar(context: context, title: message);
+          }
+
+        } catch(e){
+          if(mounted){
+            setState(() => _isLoading = false);
+            Utils.showSnackBar(context: context, title: 'Hubo un error: $e');
+          }
+        }
+    }
+  }
+
+  Future<UserCredential?> _handleGoogleSignIn() async {
+    // Trigger the authentication flow
+    final GoogleSignIn signIn = GoogleSignIn.instance;
+
+    await signIn.initialize();
+
+    // Obtain the auth details from the request
+    final GoogleSignInAccount googleAuth = await signIn.authenticate();
+
+    // Create a new credential
+    final credential = GoogleAuthProvider.credential(
+      idToken: googleAuth.authentication.idToken,
+    );
+
+    return await FirebaseAuth.instance.signInWithCredential(credential);
+  }
+
   @override
   Widget build(BuildContext context) {
     return CustomScaffold(
@@ -18,18 +97,131 @@ class _LoginPageState extends State<LoginPage> {
           const Expanded(
             flex: 1,
             child: SizedBox(
-              height: 10,
+              height: 10, 
             )
           ),
           Expanded(
             flex: 7,
             child: Container(
+              padding: const EdgeInsets.fromLTRB(25.0, 50.0, 25.0, 20.0),
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(40.0),
                   topRight: Radius.circular(40.0),
                 ),
+              ),
+              child:  SingleChildScrollView(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Bienvenido de nuevo',
+                        style: TextStyle(
+                          fontSize: 30.0,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.deepPurple,
+                        ),
+                      ),
+                
+                      //Campo de correo electronico
+                      CustomTextField(
+                        label: 'Correo electronico',
+                        hint: 'example@gmail.com',
+                        keyboardType: TextInputType.emailAddress,
+                        controller: _emailController,
+                        prefixIcon: Icons.email_outlined,
+                        validator: (value){
+                          if(value==null || value.isEmpty){
+                            return 'Por favor ingresa tu correo';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20,),
+                
+                      //Campo de la contraseña
+                      CustomTextField(
+                        label: 'Contraseña',
+                        hint: '**********',
+                        obscureText:true,
+                        controller: _passwordController,
+                        prefixIcon: Icons.lock_outlined,
+                        suffixIcon: _obscurePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                        onSuffixIconTap: (){
+                          setState(() => _obscurePassword = !_obscurePassword);
+                        },
+                        validator: (value){
+                          if(value==null || value.isEmpty){
+                            return 'Por favor ingresa tu contraseña';
+                          }
+                          if(value.length < 6){
+                            return 'La contraseña debe tener al menos 6 carácteres';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 5,),
+                
+                      //Recordar contraseña 
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Checkbox(
+                                value: rememberPassword, 
+                                onChanged: (bool? value){
+                                  setState(() {
+                                    rememberPassword = value!;
+                                  });
+                                },
+                                activeColor: Colors.deepPurple,
+                                ),
+                                const Text(
+                                  'Recordar contraseña',
+                                  style: TextStyle(
+                                    color: Colors.black45,
+                                  ),
+                                )
+                            ],
+                          ),
+                          GestureDetector(
+                            child: Text(
+                              'Olvide mi contraseña',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.deepPurple,
+                              ),
+                              ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20,),
+                
+                      //Boton de inicio de sesión
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _handleLogin,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.deepPurple
+                          ),
+                           child: const Text(
+                            'Iniciar Sesión',
+                            style: TextStyle(
+                              color: Colors.white
+                            ),
+                           ),
+                          ),
+                      ),
+                    ],
+                  )
+                  ),
               ),
             )
           )
