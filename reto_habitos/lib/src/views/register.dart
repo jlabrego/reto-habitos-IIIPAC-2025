@@ -31,6 +31,7 @@ class _RegisterState extends State<Register> {
                   topRight: Radius.circular(40.0),
                 ),
               ),
+              //Campo del correo
             )
           )
         ],

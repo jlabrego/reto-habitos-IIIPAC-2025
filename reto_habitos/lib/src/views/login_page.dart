@@ -211,17 +211,98 @@ class _LoginPageState extends State<LoginPage> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.deepPurple
                           ),
-                           child: const Text(
-                            'Iniciar Sesión',
-                            style: TextStyle(
+                           child: _isLoading
+                            ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation(Colors.white),
+                              strokeWidth: 2,
+                              ),
+                            )
+                            : const Text(
+                              'Iniciar Sesión',
+                              style: TextStyle(
                               color: Colors.white
                             ),
                            ),
                           ),
                       ),
+                      const SizedBox(height: 20),
+                      //Divisor
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: 1,
+                              color: const Color(0xFFE5E7EB),
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 12),
+                            child: Text(
+                              'O',
+                              style: TextStyle(
+                              color: Color(0xFF6B7280),
+                              fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Container(
+                            height: 1,
+                            color: const Color(0xFFE5E7EB),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Botón de Google Sign-In
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: OutlinedButton(
+                          onPressed: () async {
+                            final user = await _handleGoogleSignIn();
+
+                            if (user != null && context.mounted) {
+                            context.push('/habits');
+                            }
+                          },
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(
+                            color: Color(0xFFE5E7EB),
+                            width: 1,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Image(image: AssetImage('assets/google.png')),
+                            Image.asset('assets/images/google.png', width: 25, height: 25),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: const Text(
+                                'Continuar con Google',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF1F2937),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                     ],
                   )
-                  ),
+                ),
               ),
             )
           )
