@@ -40,7 +40,7 @@ class MyApp extends StatelessWidget {
 
           return null;
         },
-    initialLocation: '/welcome',
+    initialLocation: '/habits',
 
     routes: [
       //Pantalla de Bienvenida
@@ -169,7 +169,7 @@ class MyApp extends StatelessWidget {
           
           final habitService = HabitService(userId: user.uid);
 
-          return HabitFormScreen(habitService: habitService);
+          return HabitFormScreen(habitService: habitService);    
         },
       ),
     ],

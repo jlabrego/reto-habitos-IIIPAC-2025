@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reto_habitos/src/shared/utils.dart';
@@ -191,10 +192,91 @@ class HabitListScreen extends StatelessWidget {
     return const Center(child: Text('No hay retos activos.')); 
   }
 
+  Widget _buildAppDrawer(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final userName = user?.displayName ?? 'Usuario';
+    final userEmail = user?.email ?? 'Sin correo';
+
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: <Widget>[
+          // Cabecera del Drawer (Muestra info del usuario logueado)
+          UserAccountsDrawerHeader(
+            accountName: Text(userName, style: const TextStyle(fontWeight: FontWeight.bold)),
+            accountEmail: Text(userEmail),
+            currentAccountPicture: CircleAvatar(
+              backgroundColor: Colors.white,
+              child: Text(
+                userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                style: const TextStyle(fontSize: 30, color: Colors.deepPurple),
+              ),
+            ),
+            decoration: const BoxDecoration(
+              color: Colors.deepPurple,
+            ),
+          ),
+          
+          // Opción de Configuración/Perfil
+          ListTile(
+            leading: const Icon(Icons.account_circle_rounded),
+            title: const Text('Mi Perfil',
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            onTap: () {
+              Navigator.pop(context);  
+              Utils.showSnackBar(context:context, title: 'Navegar a Perfil...');
+            },
+          ),
+          
+          // Opción de Estadísticas Globales
+          ListTile(
+            leading: const Icon(Icons.bar_chart_rounded),
+            title: const Text('Estadísticas',
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            onTap: () {
+              Navigator.pop(context); 
+              // context.pushNamed('statistics'); 
+              Utils.showSnackBar(context:context , title: 'Navegar a Estadísticas...');
+            },
+          ),
+          
+          const Divider(),
+          
+          // Opción de Cerrar Sesión
+          ListTile(
+            leading: const Icon(Icons.logout_rounded, color: Colors.red),
+            title: const Text('Cerrar Sesión', style: TextStyle(color: Colors.red)),
+            onTap: () async {
+              // Cierra el drawer
+              Navigator.pop(context); 
+              
+              // Cierra la sesión de Firebase
+              await FirebaseAuth.instance.signOut();
+              
+              // Redirige al usuario a la pantalla de Login/Home
+              context.go('/login-page'); // Redirige a la ruta raíz (Login/Splash)
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
+      drawer: _buildAppDrawer(context),
       appBar: AppBar(
         title: const Text('Tus Retos de 30 Días', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
         backgroundColor: Colors.grey.shade50, elevation: 0, centerTitle: true,
