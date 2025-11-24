@@ -2,7 +2,6 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:intl/intl.dart'; 
 import '../models/habit.dart'; // Asegúrate de que esta ruta sea correcta
 import '../models/day_progress.dart'; // Asegúrate de que esta ruta sea correcta
 

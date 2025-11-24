@@ -76,6 +76,7 @@ class HabitListScreen extends StatelessWidget {
               
               );
             }
+            return null;
           },
 
           background: Container(

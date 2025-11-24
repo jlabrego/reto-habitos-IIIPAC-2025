@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/percent_indicator.dart';
-import '../models/habit.dart';
 
 class GlobalProgressSummary extends StatelessWidget {
   final int totalCompletedDays;

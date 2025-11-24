@@ -9,10 +9,10 @@ class TimerScreen extends StatelessWidget {
   final HabitService habitService;
 
   const TimerScreen({
-    Key? key,
+    super.key,
     required this.habitId,
     required this.habitService,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

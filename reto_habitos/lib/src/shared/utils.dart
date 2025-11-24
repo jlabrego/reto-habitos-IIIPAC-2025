@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class Utils {
-  static showSnackBar({
+  static void showSnackBar({
     required BuildContext context,
     required String title,
     Color? color,
@@ -12,7 +12,7 @@ class Utils {
     ).showSnackBar(SnackBar(content: Text(title), backgroundColor: color));
   }
 
-  static showConfirm({
+  static Future<Future<bool?>> showConfirm({
     required BuildContext context,
     void Function()? confirmButton,
   }) async {

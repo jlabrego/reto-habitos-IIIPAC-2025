@@ -12,7 +12,20 @@
           "package_name": "hn.edu.unah.proyecto_reto_habitos_GJA"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "342205720-pif7ue4371ktl4utkirvoufegjrbln8h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "hn.edu.unah.proyecto_reto_habitos_GJA",
+            "certificate_hash": "d68b99b43653592ed3993ba268106bf33cc6ed55"
+          }
+        },
+        {
+          "client_id": "342205720-5uqlhrvm0rcucq7bq7684h16hon46kjr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBGlCvEY8Raj4nyX4E5rfudrpkLdNvAm6w"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "342205720-5uqlhrvm0rcucq7bq7684h16hon46kjr.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "342205720-nkun205f83km5317c4ag7hbsua4o0smc.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.retoHabitos"
+              }
+            }
+          ]
         }
       }
     }

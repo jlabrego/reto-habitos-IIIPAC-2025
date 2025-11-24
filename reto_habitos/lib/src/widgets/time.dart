@@ -29,10 +29,10 @@ class TimerLogicWidget extends StatefulWidget {
   final HabitService habitService;
 
   const TimerLogicWidget({
-    Key? key,
+    super.key,
     required this.habit,
     required this.habitService,
-  }) : super(key: key);
+  });
 
   @override
   State<TimerLogicWidget> createState() => _TimerLogicWidgetState();
@@ -299,7 +299,7 @@ class _TimerLogicWidgetState extends State<TimerLogicWidget> {
 
               // TÍTULO DEL HÁBITO
               Text(
-                name.length > 20 ? name.substring(0, 18) + '...' : name,
+                name.length > 20 ? '${name.substring(0, 18)}...' : name,
                 style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,

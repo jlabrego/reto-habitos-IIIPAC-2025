@@ -143,7 +143,7 @@ class _HabitFormScreenState extends State<HabitFormScreen> {
                   labelText: "Categoría",
                   border: OutlineInputBorder(),
                 ),
-                value: _category,
+                initialValue: _category,
                 items: _categories
                     .map((cat) => DropdownMenuItem(
                           value: cat,
