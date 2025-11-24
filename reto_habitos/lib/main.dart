@@ -42,7 +42,7 @@ class MyApp extends StatelessWidget {
           return null;
         },
 
-    initialLocation: '/welcome',
+    initialLocation: '/habits',
 
     routes: [
       //Pantalla de Bienvenida
