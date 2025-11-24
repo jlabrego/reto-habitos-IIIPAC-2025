@@ -6,21 +6,45 @@ import '../models/habit.dart'; // Asegúrate de que esta ruta sea correcta
 import '../models/day_progress.dart'; // Asegúrate de que esta ruta sea correcta
 
 class HabitService {
-    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-    final CollectionReference habitsRef = FirebaseFirestore.instance.collection('habits');
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
+    final String userId; //Agregar userId
+    
+    //Obtener la referencia del usuario
+    CollectionReference getHabitsRef() {
+    return firestore.collection('users').doc(userId).collection('habits');
+}
     
     // Inyección de dependencias de tiempo para pruebas
     final DateTime Function() _now;
-    HabitService({DateTime Function()? now}) : _now = now ?? DateTime.now;
+    HabitService({
+      DateTime Function()? now,
+      required this.userId,
+      }) : _now = now ?? DateTime.now;
 
-    // 1. MÉTODOS BÁSICOS (CRUD)
+    // MÉTODOS BÁSICOS CRUD
 
+    //Agregar hábitos:
     Future<void> addHabit(Habit habit) async {
-        await habitsRef.doc(habit.id).set(habit.tojson()); 
+        await getHabitsRef().doc(habit.id).set(habit.toJson()); 
+    }
+
+    //Método de actualización
+  Future<void> updateHabit(Habit habit) async {
+        try {
+            await getHabitsRef().doc(habit.id).update(habit.toJson());
+        } catch (e) {
+            print('Error al actualizar hábito: $e');
+            rethrow; // Relanza la excepción para manejarla en el UI
+        }
+    }
+
+    //Eliminar hábitos: 
+    Future<void> deleteHabit(String habitId) async {
+    await getHabitsRef().doc(habitId).delete();
     }
 
     Stream<Habit?> getHabitStream(String habitId) {
-        return habitsRef.doc(habitId).snapshots().map((snapshot) {
+        return getHabitsRef().doc(habitId).snapshots().map((snapshot) {
             if (!snapshot.exists) return null;
 
             final data = snapshot.data() as Map<String, dynamic>;
@@ -31,7 +55,7 @@ class HabitService {
     }
 
     Stream<List<Habit>> getHabitsStream() {
-        return habitsRef.snapshots().map((snapshot) {
+        return getHabitsRef().snapshots().map((snapshot) {
             return snapshot.docs
                 .map((d) {
                     final data = d.data() as Map<String, dynamic>;
@@ -45,7 +69,7 @@ class HabitService {
 
     // 2. STREAMS Y CONTEOS REACTIVOS
     Stream<int> getCompletedDaysCountStream(String habitId) {
-        return habitsRef
+        return getHabitsRef()
             .doc(habitId)
             .collection('daysCompleted')
             .snapshots() 
@@ -102,12 +126,12 @@ class HabitService {
         final now = _now(); // ✅ Usa la fecha inyectada
         final completedDates = await getCompletedDatesStream(habitId).first;
         final newStreak = _calculateStreak(now, completedDates);
-        await habitsRef.doc(habitId).update({'streak': newStreak});
+        await getHabitsRef().doc(habitId).update({'streak': newStreak});
     }
 
     // 4. REGISTRO DIARIO (GRID Y CRONÓMETRO)
     Stream<List<DateTime>> getCompletedDatesStream(String habitId) {
-        return habitsRef.doc(habitId).collection('daysCompleted').snapshots().map((snapshot) {
+        return getHabitsRef().doc(habitId).collection('daysCompleted').snapshots().map((snapshot) {
             return snapshot.docs.map((doc) {
                 final data = doc.data() as Map<String, dynamic>?;
                 if (data != null && data.containsKey('date')) {
@@ -120,7 +144,7 @@ class HabitService {
 
     Future<void> toggleDayCompletion(String habitId, DateTime date, bool isCompleted) async {
         final dateKey = date.toIso8601String().substring(0, 10);
-        final dateRef = habitsRef.doc(habitId).collection('daysCompleted').doc(dateKey);
+        final dateRef = getHabitsRef().doc(habitId).collection('daysCompleted').doc(dateKey);
 
         if (isCompleted) {
             await dateRef.delete();
@@ -136,7 +160,7 @@ class HabitService {
     Future<void> completeTodayWithTime(String habitId, int totalSecondsSpent, int requiredDurationMinutes) async {
         final today = _now(); // ✅ Usa la fecha inyectada
         final dateKey = today.toIso8601String().substring(0, 10);
-        final habitRef = habitsRef.doc(habitId);
+        final habitRef = getHabitsRef().doc(habitId);
 
         final requiredSeconds = requiredDurationMinutes * 60;
         final isGoalCompleted = totalSecondsSpent >= requiredSeconds;
@@ -174,7 +198,7 @@ class HabitService {
         final today = _now(); // ✅ Usa la fecha inyectada
         final dateKey = today.toIso8601String().substring(0, 10);
 
-        return habitsRef
+        return getHabitsRef()
             .doc(habitId)
             .collection('progress')
             .doc(dateKey)

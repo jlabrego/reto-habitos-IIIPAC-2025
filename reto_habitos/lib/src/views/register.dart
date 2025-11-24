@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:reto_habitos/src/models/users.dart';
+import 'package:reto_habitos/src/providers/user_service.dart';
 import 'package:reto_habitos/src/widgets/custom_Scaffold.dart';
 import 'package:reto_habitos/src/widgets/custom_text_field.dart';
 
@@ -21,6 +23,7 @@ class _RegisterState extends State<Register> {
   bool rememberPassword = false;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final userService=UserService();
 
   Future<void> _registerUser() async {
     if (_formKey.currentState!.validate()) {
@@ -38,6 +41,16 @@ class _RegisterState extends State<Register> {
         // Actualizar el nombre del usuario
         await userCredential.user!.updateDisplayName(_nameController.text.trim());
 
+        // ✅ NUEVO: Guardar usuario en Firestore
+        final newUser = AppUser(
+          id: userCredential.user!.uid,
+          email: _emailController.text.trim(),
+          name: _nameController.text.trim(),
+          createdAt: DateTime.now(),
+        );
+
+        await userService.createOrUpdateAppUser(newUser);
+
         // Mostrar éxito y navegar 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -45,7 +58,7 @@ class _RegisterState extends State<Register> {
           );
           
           // Navegar a la pagina de habitos
-          context.push('/habits');
+          context.push('/login');
         }
       } on FirebaseAuthException catch (e) {
         // Manejar errores de Firebase 

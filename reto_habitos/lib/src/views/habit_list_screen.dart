@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reto_habitos/src/shared/utils.dart';
@@ -63,19 +62,26 @@ class HabitListScreen extends StatelessWidget {
           key: Key(habit.id),
           confirmDismiss: (direction) async {
             if(direction==DismissDirection.startToEnd){
+
+              //Para eliminar
               return await Utils.showConfirm(context: context,
               confirmButton: () {
-                FirebaseFirestore.instance
-                .collection('habits')
-                .doc(habit.id)
-                .delete();
+
+                habitService.deleteHabit(habit.id);
 
                 if (!context.mounted) return;
-                context.pop(true);
-              },
-              
+                context.pop();
+               },              
               );
             }
+            //? Para actualizar
+            if (direction == DismissDirection.endToStart) {
+              context.pushNamed(
+                'update-habit',
+                 extra: habit,
+              );
+              return false;
+            }    
             return null;
           },
 

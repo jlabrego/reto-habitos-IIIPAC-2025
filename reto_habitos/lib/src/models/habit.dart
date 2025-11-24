@@ -8,7 +8,7 @@ class Habit {
   final int streak;      
   final DateTime createdAt;
   final String category;
-  final String? colorHex; 
+  final String colorHex; 
 
   Habit({
     required this.id,
@@ -18,7 +18,7 @@ class Habit {
     required this.streak,       
     required this.createdAt,
     required this.category,
-    this.colorHex,
+    required this.colorHex,
   });
 
   // Constructor fromJson modificado
@@ -26,17 +26,17 @@ class Habit {
     return Habit(
       id: json['id'] as String? ?? '',
       name: json['name'] as String,
-      description: json['description'] as String,
+      description: json['description'] as String?,
       duration: json['duration'] as int,
       streak: json['streak'] as int,      
       createdAt: (json['createdAt'] as Timestamp).toDate(),
       category: json['category'] as String? ?? 'Otro',
-      colorHex: json['colorHex'] as String?,
+      colorHex: json['colorHex'] as String,
     );
   }
 
   // Método tojson modificado
-  Map<String, dynamic> tojson() {
+  Map<String, dynamic> toJson() {
     return {
       //'id': id,
       'name': name,
