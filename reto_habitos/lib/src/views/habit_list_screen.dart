@@ -264,7 +264,7 @@ class HabitListScreen extends StatelessWidget {
               await FirebaseAuth.instance.signOut();
               
               // Redirige al usuario a la pantalla de Login/Home
-              context.go('/login-page'); // Redirige a la ruta raíz (Login/Splash)
+              context.go('/'); // Redirige a la ruta raíz (Login/Splash)
             },
           ),
         ],
