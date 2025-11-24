@@ -64,41 +64,51 @@ class _CustomTextFieldState extends State<CustomTextField> {
             color: Color(0xFF1F2937),
           ),
         ),
-        const SizedBox(height:20),
+        const SizedBox(height: 20),
         TextFormField(
           controller: widget.controller,
           keyboardType: widget.keyboardType,
-          obscureText: _obscureText,
-          maxLines: _obscureText ? 1 : widget.maxLines,
-          minLines: _obscureText ? 1 : widget.minLines,
+          obscureText: widget.obscureText ? _obscureText : false,
+          maxLines: widget.obscureText ? 1 : widget.maxLines,
+          minLines: widget.obscureText ? 1 : widget.minLines,
           validator: widget.validator,
           onChanged: widget.onChanged,
           decoration: InputDecoration(
             hintText: widget.hint,
             hintStyle: const TextStyle(color: Color(0xFFB0B0B0), fontSize: 14),
+
             prefixIcon: widget.prefixIcon != null
-                ? Icon(
-                    widget.prefixIcon,
-                    color: const Color(0xFF6B7280),
-                    size: 20,
-                  )
+                ? Icon(widget.prefixIcon, color: Color(0xFF6B7280), size: 20)
                 : null,
-            suffixIcon: widget.suffixIcon != null
+            suffixIcon: widget.obscureText
                 ? GestureDetector(
-                    onTap: widget.onSuffixIconTap,
+                    onTap: () {
+                      setState(() => _obscureText = !_obscureText);
+                      if (widget.onSuffixIconTap != null) {
+                        widget.onSuffixIconTap!();
+                      }
+                    },
                     child: Icon(
-                      widget.suffixIcon,
+                      _obscureText ? Icons.visibility_off : Icons.visibility,
                       color: const Color(0xFF6B7280),
                       size: 20,
                     ),
                   )
-                : null,
+                : widget.suffixIcon != null
+                    ? GestureDetector(
+                        onTap: widget.onSuffixIconTap,
+                        child: Icon(
+                          widget.suffixIcon,
+                          color: const Color(0xFF6B7280),
+                          size: 20,
+                        ),
+                      )
+                    : null,
+
             filled: true,
             fillColor: widget.filledColor,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(widget.borderRadius),
               borderSide: BorderSide(color: widget.borderColor, width: 1),
@@ -109,18 +119,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(widget.borderRadius),
-              borderSide: BorderSide(
-                color: widget.focusedBorderColor,
-                width: 2,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(widget.borderRadius),
-              borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(widget.borderRadius),
-              borderSide: const BorderSide(color: Color(0xFFEF4444), width: 2),
+              borderSide:
+                  BorderSide(color: widget.focusedBorderColor, width: 2),
             ),
           ),
         ),
