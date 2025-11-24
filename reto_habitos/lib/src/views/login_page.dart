@@ -41,8 +41,10 @@ class _LoginPageState extends State<LoginPage> {
         );
 
         if(mounted) {
+          final user = FirebaseAuth.instance.currentUser;
+          final userName = user?.displayName ?? 'Usuario';
           setState(() => _isLoading = false);
-          Utils.showSnackBar(context: context, title: 'Bienvenido');
+          Utils.showSnackBar(context: context, title: 'Bienvenido $userName');
           context.push('/habits');
         } 
 

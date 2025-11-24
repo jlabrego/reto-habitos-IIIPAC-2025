@@ -127,7 +127,7 @@ class HabitDetailScreen extends StatelessWidget {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 7, 
+                        crossAxisCount: 6, 
                         crossAxisSpacing: 5,
                         mainAxisSpacing: 5,
                     ),

@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:reto_habitos/src/models/habit.dart';
 import 'package:reto_habitos/src/views/login_page.dart';
 import 'package:reto_habitos/src/views/register.dart';
 import 'firebase_options.dart';
@@ -32,15 +33,16 @@ class MyApp extends StatelessWidget {
     redirect: (context, state) {
           final user = FirebaseAuth.instance.currentUser;
 
-          final freeRoutes = ['/register'];
+          final freeRoutes = ['/register', '/login'];
 
           if (user == null && !freeRoutes.contains(state.fullPath)) {
-            return '/login';
+            return '/welcome';
           }
 
           return null;
         },
-    initialLocation: '/habits',
+
+    initialLocation: '/welcome',
 
     routes: [
       //Pantalla de Bienvenida
@@ -169,7 +171,12 @@ class MyApp extends StatelessWidget {
           
           final habitService = HabitService(userId: user.uid);
 
-          return HabitFormScreen(habitService: habitService);    
+          final habit = state.extra as Habit?;
+    
+          return HabitFormScreen(
+          habitService: habitService,
+          habit: habit, //Pasar el hábito al formulario
+    );    
         },
       ),
     ],

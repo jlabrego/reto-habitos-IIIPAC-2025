@@ -29,7 +29,7 @@ class HabitService {
     }
 
     //Método de actualización
-  Future<void> updateHabit(Habit habit) async {
+    Future<void> updateHabit(Habit habit) async {
         try {
             await getHabitsRef().doc(habit.id).update(habit.toJson());
         } catch (e) {
@@ -40,9 +40,27 @@ class HabitService {
 
     //Eliminar hábitos: 
     Future<void> deleteHabit(String habitId) async {
-    await getHabitsRef().doc(habitId).delete();
+      final habitRef = getHabitsRef().doc(habitId);
+      
+      // Lista de todas las subcolecciones conocidas
+      const subcollections = ['daysCompleted', 'progress'];
+      
+      // Crear batch
+      final batch = firestore.batch();
+      
+      // Eliminar cada subcolección
+      for (final subcollection in subcollections) {
+        final snapshot = await habitRef.collection(subcollection).get();
+        for (final doc in snapshot.docs) {
+          batch.delete(doc.reference);
+        }
+      }
+      
+      // Eliminar hábito principal
+      batch.delete(habitRef);
+      
+      await batch.commit();
     }
-
     Stream<Habit?> getHabitStream(String habitId) {
         return getHabitsRef().doc(habitId).snapshots().map((snapshot) {
             if (!snapshot.exists) return null;
