@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:reto_habitos/src/models/users.dart';
+import 'package:reto_habitos/src/providers/user_service.dart';
 import 'package:reto_habitos/src/shared/utils.dart';
 import 'package:reto_habitos/src/widgets/custom_Scaffold.dart';
 import 'package:reto_habitos/src/widgets/custom_text_field.dart';
@@ -86,7 +88,21 @@ class _LoginPageState extends State<LoginPage> {
       idToken: googleAuth.authentication.idToken,
     );
 
-    return await FirebaseAuth.instance.signInWithCredential(credential);
+    //GUARDAR USUARIO EN FIRESTORE DESPUÉS DE GOOGLE SIGN-IN
+    final UserCredential userCredential = 
+      await FirebaseAuth.instance.signInWithCredential(credential);
+  if (userCredential.user != null) {
+    final userService = UserService();
+    final newUser = AppUser(
+      id: userCredential.user!.uid,
+      email: userCredential.user!.email!,
+      name: userCredential.user!.displayName ?? 'Usuario Google',
+      createdAt: DateTime.now(),
+    );
+    await userService.createOrUpdateAppUser(newUser);
+  }
+  
+  return userCredential;
   }
 
   @override

@@ -8,7 +8,7 @@ class UserService {
   
   Future<void> createOrUpdateAppUser(AppUser user) async {
     await _firestore
-      .collection('AppUsers')
+      .collection('users')
       .doc(user.id)
       .set(user.toJson(), SetOptions(merge: true));
   }

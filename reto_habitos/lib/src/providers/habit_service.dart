@@ -8,18 +8,18 @@ import '../models/day_progress.dart'; // Asegúrate de que esta ruta sea correct
 class HabitService {
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
     final String userId; //Agregar userId
-    
-    //Obtener la referencia del usuario
-    CollectionReference getHabitsRef() {
-    return firestore.collection('users').doc(userId).collection('habits');
-}
-    
     // Inyección de dependencias de tiempo para pruebas
     final DateTime Function() _now;
+    
     HabitService({
       DateTime Function()? now,
       required this.userId,
       }) : _now = now ?? DateTime.now;
+
+      //Obtener la referencia del usuario
+    CollectionReference getHabitsRef() {
+    return firestore.collection('users').doc(userId).collection('habits');
+}
 
     // MÉTODOS BÁSICOS CRUD
 
