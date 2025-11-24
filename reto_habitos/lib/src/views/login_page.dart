@@ -186,7 +186,7 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 5,),
                 
                       //Recordar contraseña 
-                      Row(
+                      Column(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Row(
